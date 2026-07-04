@@ -15,6 +15,114 @@ As a Gemini agent (via Antigravity/`agy`), note the following integration points
 - When writing temporary scratch scripts or files for testing, consider using the Antigravity artifact directory (`<appDataDir>/brain/<conversation-id>/scratch/`).
 - Use standard GitHub-flavored markdown and Antigravity features like artifacts for extensive reporting or logs.
 
+## IMPORTANT
+
+> [!WARNING]
+> These rules override default behaviour. Follow them exactly when working with this codebase. Violations may cause
+> linter failures or break pre-commit hooks.
+
+- ALWAYS read [GOTCHA.md](./GOTCHA.md) first
+- PREFER British English over American English spelling and grammar except in **inline code** sections
+- USE Markdown banners ([see below](#a-tour-of-banners))
+- Files and Directories MUST NOT have **dashes** in names/paths (use **underscore** instead)
+- NEVER use Git LFS
+- USE Emoji in [README.md](./README.md) or **docs/\*.md** with care. NOT MUCH.
+- ALL development scripts use Nushell (\*.nu) - install nushell for development workflow
+- ALWAYS use `[x]` or `[ ]` instead of ✅ / 🔲 / for checkmarks
+- NEVER use `[x]` or `[ ]` in Markdown tables; USE ✅ / 🔲 / instead. **Reason**: it's not supported
+- PREFER [GitHub Emoji API](https://api.github.com/emojis) over Unicode Emoji
+- ALWAYS add footer to new Markdown files with a AI generated content banner (!CAUTION)
+- PREFER 120 characters per line
+
+## A Tour of Banners
+
+> [!NOTE]
+> Highlights information that users should take into account, even when skimming.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention due to potential risks.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+
+## Commit Messages
+
+Follow conventional commit format with detailed explanations and proper sign-off.
+
+### Format
+
+```
+<type>(<scope>): <subject>
+
+<detailed body explaining what and why in bullet points>
+
+BREAKING CHANGE: <description if applicable>
+
+🤖 Generated with [$(ai.nu agent get-caller-identity --key .name)]($(ai.nu agent get-caller-identity --key .url))
+
+Co-Authored-By: $(ai.nu model --key .name) <gemini-code-assist@google.com>
+Co-Authored-By: $(ai.nu agent get-caller-identity)
+Signed-Off-By: Paal Øye-Strømme <paal.o.eye@gmail.com>
+```
+
+> [!IMPORTANT]
+> The `$(ai.nu agent get-caller-identity)` footer line requires shell substitution. Use an **unquoted** heredoc (`EOF`, not `'EOF'`) so the shell expands it:
+>
+> ```bash
+> git commit -m "$(cat <<EOF
+> <message>
+>
+> Co-Authored-By: $(ai.nu agent get-caller-identity)
+> EOF
+> )"
+> ```
+
+### Best Practices
+
+- **Type**: Use `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- **Scope**: Specify affected module/component (e.g., `supabase`, `components`, `hooks`)
+- **Subject**: Imperative mood, no period, max 50 characters
+- **Body**: Explain the what and why, not how. Include context and reasoning in bullet points using "-" as for item mark
+- **Breaking Changes**: Always document with `BREAKING CHANGE:` footer
+- **Sign-off**: Include Agent attribution for AI-generated commits in `Co-Authored-By` and the main committer in `Signed-Off-By`
+
+### Examples
+
+```bash
+feat(supabase): add verify-email function
+
+- added verify-email Edge function to confirm users's email
+- added tests
+
+fix(components): add toaster
+
+- toaster is used for notification
+- no testes yet
+
+docs:: update module usage examples and references
+
+- for consistency
+- improved readability
+
+refactor(hooks): change useToast
+
+- fixes #1
+- added extra options
+```
+
+## Conventions
+
+- **We're Dutch honest**
+- British English throughout (colour, licence, behaviour, etc.)
+- No dashes in file or directory names — use underscores
+- Follow conventional commit format
+
 ## Module Structure
 
 ```text
