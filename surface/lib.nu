@@ -6,7 +6,7 @@
 #  libgtty
 #
 
-export use ../lib.nu [ ghostty_bundle_id ]
+export use ../lib.nu [ ghostty_bundle_id my_index ]
 
 export const TINT_DIM   = "#1c1214"
 export const TINT_FLASH = "#2a1015"
@@ -23,18 +23,6 @@ export def flash [tty_dev: string, duration: duration = 300ms] {
     tint $tty_dev $TINT_FLASH
     sleep $duration
     tint $tty_dev ""
-}
-
-export def my_index [bundle_id: string] {
-    let info = (^osascript -e $"
-        tell application id \"($bundle_id)\"
-            set n to count terminals of selected tab of front window
-            set fid to id of focused terminal of selected tab of front window
-            repeat with i from 1 to n
-                if id of terminal i of selected tab of front window is fid then return \(i as text\) & \":\" & \(n as text\)
-            end repeat
-        end tell" | str trim | split row ":")
-    { index: ($info.0 | into int), count: ($info.1 | into int) }
 }
 
 export def focus [bundle_id: string, surface_index: int] {

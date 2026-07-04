@@ -67,18 +67,6 @@ export def main [
     focus_first_terminal $bundle_id
 }
 
-def my_index [bundle_id: string] {
-    let info = (^osascript -e $"
-        tell application id \"($bundle_id)\"
-            set n to count terminals of selected tab of front window
-            set fid to id of focused terminal of selected tab of front window
-            repeat with i from 1 to n
-                if id of terminal i of selected tab of front window is fid then return \(i as text\) & \":\" & \(n as text\)
-            end repeat
-        end tell" | str trim | split row ":")
-    { index: ($info.0 | into int), count: ($info.1 | into int) }
-}
-
 def focus_first_terminal [bundle_id: string] {
     ^osascript -e $"
         tell application id \"($bundle_id)\"

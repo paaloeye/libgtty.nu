@@ -12,7 +12,7 @@ use lib.nu *
 # Build a workspace layout in the current Ghostty tab (4-pane layout).
 #
 # Tab layout:
-#   [t1: zzz <readme>]                [t3: zzz]
+#   [t1: nnn <readme>]                [t3: nnn]
 #   [t2: $env.CLAUDE | $env.GEMINI]   [t4: gitui]
 #
 export def main [
@@ -30,8 +30,8 @@ export def main [
         error make { msg: $"Tab already has ($pane_count) panes — workspace must start from a single pane" }
     }
 
-    let cwd        = $env.PWD
-    let editor     = "zzz"
+    let cwd    = $env.PWD
+    let editor = ($env.EDITOR? | default "nnn")
 
     # TODO: make it your own
     # let aurum_bin       = ($env.AURUM?          | default "au") # 🥇
@@ -95,7 +95,7 @@ tell application id \"($bundle_id)\"
     -- TODO: make sure HUMAN maximises the surface before starting AI
     -- send key \"enter\" to t2
 
-    input text \"zzz\" to t3
+    input text \"($editor)\" to t3
     send key \"enter\" to t3
 
     input text \"gitui\" to t4

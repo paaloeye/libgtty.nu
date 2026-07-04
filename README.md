@@ -70,7 +70,7 @@ gtty enter [--file <path>] [--ai <provider>] [--ai-session <id>]
 ```text
 +-----------------------+-----------------------+
 |                       |                       |
-|   t1: nnn <file>      |   t3: nnn             |
+|   t1: editor <file>   |   t3: editor          |
 |                       |                       |
 +-----------------------+-----------------------+
 |                       |                       |
@@ -79,11 +79,11 @@ gtty enter [--file <path>] [--ai <provider>] [--ai-session <id>]
 +-----------------------+-----------------------+
 ```
 
-| Flag           | Default      | Description                                                      |
-| :------------- | :----------- | :--------------------------------------------------------------- |
-| `--file`       | First README | File to open in `nnn` (defaults to the first existing README)    |
-| `--ai`         | `agy`        | AI provider to launch in t2 (`agy`, `claude`, `gemini`, or `pi`) |
-| `--ai-session` | `""`         | Session ID to resume with `--resume` (provider-agnostic)         |
+| Flag           | Default      | Description                                                        |
+| :------------- | :----------- | :----------------------------------------------------------------- |
+| `--file`       | First README | File to open in the editor (defaults to the first existing README) |
+| `--ai`         | `agy`        | AI provider to launch in t2 (`agy`, `claude`, `gemini`, or `pi`)   |
+| `--ai-session` | `""`         | Session ID to resume with `--resume` (provider-agnostic)           |
 
 The AI binary is resolved from the environment:
 
@@ -93,6 +93,9 @@ The AI binary is resolved from the environment:
 | `claude` | `$env.CLAUDE`          | `cl`           |
 | `gemini` | `$env.GEMINI`          | `gi`           |
 | `pi`     | `$env.PI`              | `pi`           |
+
+> [!NOTE]
+> The workspace layout launches the command configured in `$env.EDITOR` inside terminal 1 and terminal 3. If `$env.EDITOR` is not defined, it defaults to [`nnn`](https://github.com/jarun/nnn) (the terminal file manager).
 
 > [!NOTE]
 > The AI command is typed into terminal 2 but **not automatically sent**.
