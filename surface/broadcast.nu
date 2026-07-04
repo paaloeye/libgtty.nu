@@ -15,7 +15,11 @@ export def main [
     }
 
     if $engine == "swift" {
-        exec ./broadcast/.build/arm64-apple-macosx/release/gtty-surface-broadcast $"($offset)"
+        const bin = (path self
+            | path expand
+            | path dirname
+            | path join "broadcast" ".build" "release" "gtty-surface-broadcast")
+        exec $bin $"($offset)"
     }
 
     let offsets: list<int> = match ($offset | describe) {
