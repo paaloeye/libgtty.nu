@@ -6,6 +6,8 @@
 #  libgtty
 #
 
+use lib.nu [ ghostty_bundle_id ]
+
 const options = {
     case_sensitive: false,
     completion_algorithm: fuzzy,
@@ -63,9 +65,9 @@ export def _panes [] {
     let raw = panes_cache_get
 
     let raw = if $raw != null { $raw } else {
+        let bundle_id = (ghostty_bundle_id)
         let fetched = try {
-            ^osascript -e '
-                tell application id "com.mitchellh.ghostty"
+            ^osascript -e ($"tell application id \"($bundle_id)\"" + '
                     set n   to count terminals of selected tab of front window
                     set fid to id of focused terminal of selected tab of front window
                     set out to ""
@@ -82,7 +84,7 @@ export def _panes [] {
                         end if
                     end repeat
                     return out
-                end tell' | str trim
+                end tell') | str trim
         } catch { "" }
         if not ($fetched | is-empty) { panes_cache_set $fetched }
         $fetched
