@@ -32,23 +32,23 @@ export def _signals [] {
     }
 }
 
-const PANES_TABLE = "GTTY_PANES"
-const PANES_TTL   = 60sec
+const SURFACES_TABLE = "GTTY_SURFACES"
+const SURFACES_TTL   = 60sec
 
 def panes_cache_get [] {
     try {
-        let row = (stor open | query db $"SELECT raw, cached_at FROM ($PANES_TABLE) LIMIT 1" | get 0?)
+        let row = (stor open | query db $"SELECT raw, cached_at FROM ($SURFACES_TABLE) LIMIT 1" | get 0?)
         if $row == null { return null }
         let age = (date now) - $row.cached_at
-        if $age > $PANES_TTL { return null }
+        if $age > $SURFACES_TTL { return null }
         $row.raw
     } catch { null }
 }
 
 def panes_cache_set [raw: string] {
-    try { stor delete --table-name $PANES_TABLE } catch { }
-    try { stor create --table-name $PANES_TABLE --columns { raw: str, cached_at: datetime } } catch { }
-    { raw: $raw, cached_at: (date now) } | stor insert --table-name $PANES_TABLE
+    try { stor delete --table-name $SURFACES_TABLE } catch { }
+    try { stor create --table-name $SURFACES_TABLE --columns { raw: str, cached_at: datetime } } catch { }
+    { raw: $raw, cached_at: (date now) } | stor insert --table-name $SURFACES_TABLE
 }
 
 # Completions for --pane on `gtty siblings` — live offsets relative to the focused pane

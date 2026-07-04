@@ -1,21 +1,31 @@
-# CLAUDE.md
+# GEMINI.md
 
 ## Purpose
 
-`gtty` is a Nushell module that manages **Ghostty** workspace surface layouts via the
-[Ghostty AppleScript API](https://ghostty.org/docs/features/applescript#broadcast-a-command-to-every-terminal) (`sdef /Applications/Ghostty.app/`).
+`gtty` is a Nushell module that manages Ghostty workspace pane layouts via the
+Ghostty AppleScript API (`sdef /Applications/Ghostty.app/`). It exposes three
+subcommands: `gtty enter`, `gtty leave`, and `gtty surface siblings`.
 
-It exposes three subcommands: `gtty enter`, `gtty exit`, and `gtty siblings`.
+## Antigravity (agy) & Gemini Context
+
+As a Gemini agent (via Antigravity/`agy`), note the following integration points:
+- `libgtty` supports launching `agy` directly in a pane using `gtty enter --ai agy`.
+- The AI binary is resolved via the `$env.ANTIGRAVITY_CLI` environment variable (defaults to `ag`).
+- When writing temporary scratch scripts or files for testing, consider using the Antigravity artifact directory (`<appDataDir>/brain/<conversation-id>/scratch/`).
+- Use standard GitHub-flavored markdown and Antigravity features like artifacts for extensive reporting or logs.
 
 ## Module Structure
 
-```
+```text
 lib/gtty/
-  mod.nu         — re-exports enter.nu, exit.nu, siblings.nu
-  enter.nu       — gtty enter    (export def main)
-  exit.nu        — gtty exit     (export def main)
-  siblings.nu    — gtty siblings (export def main)
-  completion.nu  — shared completers: _panes, _actions, _signals, _readme
+  mod.nu            — re-exports enter.nu, leave.nu, surface/
+  enter.nu          — gtty enter (export def main)
+  leave.nu          — gtty leave (export def main)
+  completion.nu     — shared completers: _panes, _actions, _signals, _ai, _readme
+  surface/
+    mod.nu          — re-exports lib.nu, siblings.nu
+    siblings.nu     — gtty surface siblings (export def main)
+    lib.nu          — tint/flash helpers and TINT_DIM / TINT_FLASH constants
 ```
 
 `mod.nu` contains only `export use` lines. Each subcommand file defines
@@ -23,11 +33,9 @@ lib/gtty/
 
 ## Completions
 
-`completion.nu` is imported by `enter.nu` and `siblings.nu` via `use completion.nu *`.
-It must not import from outside the `gtty/` directory — `../mood.nu` is a `mij`
-internal and is not available here.
+`completion.nu` is imported by `enter.nu` and `surface/siblings.nu` via `use completion.nu *`.
 
-### _panes cache
+### \_panes cache
 
 `_panes` queries Ghostty via AppleScript and caches the result in `stor`
 (Nushell's in-memory SQLite) under table `GTTY_SURFACES` with a 60-second TTL.
@@ -39,7 +47,7 @@ with an empty cache.
 
 The raw cached string is newline-separated lines:
 
-```
+```text
 ME:<index>
 <index>|<tty_device>|<pane_name>
 ```
@@ -107,5 +115,5 @@ nu --no-config-file -c "use ./lib/gtty/completion.nu *; _signals | get completio
   them as literal arguments to the external command.
 - Tint colours: `TINT_DIM = "#1c1214"`, `TINT_FLASH = "#2a1015"` (dark
   red tones used to visually mark a targeted pane).
-- The `--interval` default on `gtty siblings` is `5sec`; `--max` defaults to
+- The `--interval` default on `gtty surface siblings` is `5sec`; `--max` defaults to
   `1984` (effectively unlimited for normal use).

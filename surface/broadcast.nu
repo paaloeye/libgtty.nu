@@ -15,7 +15,7 @@ export def main [
     }
 
     if $engine == "swift" {
-        exec ($env.work)/broadcast/.build/arm64-apple-macosx/release/gtty-surface-broadcast $"($offset)"
+        exec ./broadcast/.build/arm64-apple-macosx/release/gtty-surface-broadcast $"($offset)"
     }
 
     let offsets: list<int> = match ($offset | describe) {
