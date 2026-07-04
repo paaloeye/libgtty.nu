@@ -1,5 +1,13 @@
-import Foundation
+//
+//  SPDX-License-Identifier: MIT
+//  Copyright (c) 2026 Paal Øye-Strømme
+//
+//  gtty_surface_broadcast.swift
+//  libgtty
+//
+
 import Darwin
+import Foundation
 
 // MARK: - Errors
 
@@ -35,29 +43,30 @@ enum BroadcastError: Error, CustomStringConvertible {
 // MARK: - Key Tables
 
 // Mirrors CHAR_TO_KEY in lib.nu — maps printable chars to (ghostty_key_name, needs_shift)
+// swift-format-ignore
 private let charToGhostty: [Character: (name: String, shift: Bool)] = [
     " ": ("space",        false),
-    "`": ("backquote",    false), "~": ("backquote",    true),
-    "1": ("digit1",       false), "!": ("digit1",       true),
-    "2": ("digit2",       false), "@": ("digit2",       true),
-    "3": ("digit3",       false), "#": ("digit3",       true),
-    "4": ("digit4",       false), "$": ("digit4",       true),
-    "5": ("digit5",       false), "%": ("digit5",       true),
-    "6": ("digit6",       false), "^": ("digit6",       true),
-    "7": ("digit7",       false), "&": ("digit7",       true),
-    "8": ("digit8",       false), "*": ("digit8",       true),
-    "9": ("digit9",       false), "(": ("digit9",       true),
-    "0": ("digit0",       false), ")": ("digit0",       true),
-    "-": ("minus",        false), "_": ("minus",        true),
-    "=": ("equal",        false), "+": ("equal",        true),
-    "[": ("bracketLeft",  false), "{": ("bracketLeft",  true),
-    "]": ("bracketRight", false), "}": ("bracketRight", true),
-   "\\": ("backslash",   false), "|": ("backslash",    true),
-    ";": ("semicolon",    false), ":": ("semicolon",    true),
-    "'": ("quote",        false), "\"": ("quote",       true),
-    ",": ("comma",        false), "<": ("comma",        true),
-    ".": ("period",       false), ">": ("period",       true),
-    "/": ("slash",        false), "?": ("slash",        true),
+    "`": ("backquote",    false), "~":  ("backquote",    true),
+    "1": ("digit1",       false), "!":  ("digit1",       true),
+    "2": ("digit2",       false), "@":  ("digit2",       true),
+    "3": ("digit3",       false), "#":  ("digit3",       true),
+    "4": ("digit4",       false), "$":  ("digit4",       true),
+    "5": ("digit5",       false), "%":  ("digit5",       true),
+    "6": ("digit6",       false), "^":  ("digit6",       true),
+    "7": ("digit7",       false), "&":  ("digit7",       true),
+    "8": ("digit8",       false), "*":  ("digit8",       true),
+    "9": ("digit9",       false), "(":  ("digit9",       true),
+    "0": ("digit0",       false), ")":  ("digit0",       true),
+    "-": ("minus",        false), "_":  ("minus",        true),
+    "=": ("equal",        false), "+":  ("equal",        true),
+    "[": ("bracketLeft",  false), "{":  ("bracketLeft",  true),
+    "]": ("bracketRight", false), "}":  ("bracketRight", true),
+    "\\": ("backslash",   false), "|":  ("backslash",    true),
+    ";": ("semicolon",    false), ":":  ("semicolon",    true),
+    "'": ("quote",        false), "\"": ("quote",        true),
+    ",": ("comma",        false), "<":  ("comma",        true),
+    ".": ("period",       false), ">":  ("period",       true),
+    "/": ("slash",        false), "?":  ("slash",        true),
 ]
 
 // MARK: - Target Script
@@ -72,31 +81,31 @@ final class TargetScript: @unchecked Sendable {
     private let script: NSAppleScript
 
     // Apple Event constants for calling a named handler inside an NSAppleScript
-    private static let suite:    AEEventClass = 0x61736372  // 'ascr'
-    private static let subr:     AEEventID    = 0x70736272  // 'psbr'
-    private static let hname:    AEKeyword    = 0x736E616D  // 'snam'
-    private static let dobj:     AEKeyword    = 0x2D2D2D2D  // '----'
+    private static let suite: AEEventClass = 0x6173_6372  // 'ascr'
+    private static let subr: AEEventID = 0x7073_6272  // 'psbr'
+    private static let hname: AEKeyword = 0x736E_616D  // 'snam'
+    private static let dobj: AEKeyword = 0x2D2D_2D2D  // '----'
 
     init(bundleId: String, termIndex: Int, tabIndex: Int) throws {
         let src = """
-        on do_send_key(keyName)
-            tell application id "\(bundleId)"
-                send key keyName to terminal \(termIndex) of tab \(tabIndex) of front window
-            end tell
-        end do_send_key
+            on do_send_key(keyName)
+                tell application id "\(bundleId)"
+                    send key keyName to terminal \(termIndex) of tab \(tabIndex) of front window
+                end tell
+            end do_send_key
 
-        on do_send_key_mods(keyName, modsStr)
-            tell application id "\(bundleId)"
-                send key keyName modifiers modsStr to terminal \(termIndex) of tab \(tabIndex) of front window
-            end tell
-        end do_send_key_mods
+            on do_send_key_mods(keyName, modsStr)
+                tell application id "\(bundleId)"
+                    send key keyName modifiers modsStr to terminal \(termIndex) of tab \(tabIndex) of front window
+                end tell
+            end do_send_key_mods
 
-        on do_input_text(theText)
-            tell application id "\(bundleId)"
-                input text theText to terminal \(termIndex) of tab \(tabIndex) of front window
-            end tell
-        end do_input_text
-        """
+            on do_input_text(theText)
+                tell application id "\(bundleId)"
+                    input text theText to terminal \(termIndex) of tab \(tabIndex) of front window
+                end tell
+            end do_input_text
+            """
 
         guard let s = NSAppleScript(source: src) else {
             throw BroadcastError.scriptCreationFailed
@@ -114,10 +123,10 @@ final class TargetScript: @unchecked Sendable {
         let tgt = NSAppleEventDescriptor(processIdentifier: pid)
         let ev = NSAppleEventDescriptor(
             eventClass: Self.suite,
-            eventID:    Self.subr,
+            eventID: Self.subr,
             targetDescriptor: tgt,
-            returnID:         AEReturnID(-1),
-            transactionID:    AETransactionID(0)
+            returnID: AEReturnID(-1),
+            transactionID: AETransactionID(0)
         )
         ev.setParam(.init(string: handler), forKeyword: Self.hname)
         let params = NSAppleEventDescriptor.list()
@@ -127,9 +136,9 @@ final class TargetScript: @unchecked Sendable {
         _ = script.executeAppleEvent(ev, error: &errDict)
     }
 
-    func sendKey(_ key: String)                    { invoke("do_send_key",       [.init(string: key)]) }
+    func sendKey(_ key: String) { invoke("do_send_key", [.init(string: key)]) }
     func sendKeyMods(_ key: String, _ mods: String) { invoke("do_send_key_mods", [.init(string: key), .init(string: mods)]) }
-    func sendText(_ text: String)                  { invoke("do_input_text",     [.init(string: text)]) }
+    func sendText(_ text: String) { invoke("do_input_text", [.init(string: text)]) }
 }
 
 // MARK: - One-off AppleScript helpers (startup queries only)
@@ -147,17 +156,18 @@ private func runAS(_ src: String) throws -> NSAppleEventDescriptor {
 }
 
 private func queryMyIndex(bundleId: String) throws -> (index: Int, count: Int) {
-    let result = try runAS("""
-    tell application id "\(bundleId)"
-        set n to count terminals of selected tab of front window
-        set fid to id of focused terminal of selected tab of front window
-        repeat with i from 1 to n
-            if id of terminal i of selected tab of front window is fid then
-                return (i as text) & ":" & (n as text)
-            end if
-        end repeat
-    end tell
-    """)
+    let result = try runAS(
+        """
+        tell application id "\(bundleId)"
+            set n to count terminals of selected tab of front window
+            set fid to id of focused terminal of selected tab of front window
+            repeat with i from 1 to n
+                if id of terminal i of selected tab of front window is fid then
+                    return (i as text) & ":" & (n as text)
+                end if
+            end repeat
+        end tell
+        """)
     let parts = (result.stringValue ?? "").split(separator: ":").map(String.init)
     guard parts.count == 2, let idx = Int(parts[0]), let cnt = Int(parts[1]) else {
         throw BroadcastError.unexpectedResponse("myIndex", result.stringValue ?? "nil")
@@ -166,11 +176,12 @@ private func queryMyIndex(bundleId: String) throws -> (index: Int, count: Int) {
 }
 
 private func queryTabIndex(bundleId: String) throws -> Int {
-    let result = try runAS("""
-    tell application id "\(bundleId)"
-        return index of selected tab of front window as text
-    end tell
-    """)
+    let result = try runAS(
+        """
+        tell application id "\(bundleId)"
+            return index of selected tab of front window as text
+        end tell
+        """)
     guard let s = result.stringValue, let n = Int(s) else {
         throw BroadcastError.unexpectedResponse("tabIndex", result.stringValue ?? "nil")
     }
@@ -178,11 +189,12 @@ private func queryTabIndex(bundleId: String) throws -> Int {
 }
 
 private func focusSurface(bundleId: String, surfaceIndex: Int) {
-    _ = try? runAS("""
-    tell application id "\(bundleId)"
-        focus terminal \(surfaceIndex) of selected tab of front window
-    end tell
-    """)
+    _ = try? runAS(
+        """
+        tell application id "\(bundleId)"
+            focus terminal \(surfaceIndex) of selected tab of front window
+        end tell
+        """)
 }
 
 // MARK: - Raw Terminal Input
@@ -284,13 +296,13 @@ private func resolveChar(_ s: String, ctrl: Bool) -> (keyName: String, mods: Str
     if let mapped = charToGhostty[ch] {
         var parts: [String] = []
         if mapped.shift { parts.append("shift") }
-        if ctrl         { parts.append("control") }
+        if ctrl { parts.append("control") }
         return (mapped.name, parts.joined(separator: ","))
     }
     let lower = s.lowercased()
     var parts: [String] = []
-    if s != lower  { parts.append("shift") }
-    if ctrl        { parts.append("control") }
+    if s != lower { parts.append("shift") }
+    if ctrl { parts.append("control") }
     return (lower, parts.joined(separator: ","))
 }
 
@@ -300,8 +312,8 @@ private func parseOffsets(_ raw: String) throws -> [Int] {
     for sep in ["...", ".."] where raw.contains(sep) {
         let parts = raw.components(separatedBy: sep)
         guard parts.count == 2,
-              let lo = Int(parts[0].trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "+", with: "")),
-              let hi = Int(parts[1].trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "+", with: ""))
+            let lo = Int(parts[0].trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "+", with: "")),
+            let hi = Int(parts[1].trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "+", with: ""))
         else { throw BroadcastError.invalidOffset(raw) }
         return Array(lo...hi)
     }
@@ -351,7 +363,10 @@ struct Broadcast {
         defer { exitRawMode() }
 
         loop: while true {
-            guard let key = readKey() else { usleep(1_000); continue }
+            guard let key = readKey() else {
+                usleep(1_000)
+                continue
+            }
 
             switch key {
             case .exitSignal:

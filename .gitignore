@@ -1,0 +1,43 @@
+## User settings
+xcuserdata/
+
+## Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+/*.gcno
+
+## Xcode Workspaces
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Build artifacts
+.build/
+.dist/
+
+# Swift
+*.swiftmodule
+*.swiftdoc
+
+# macOS
+.DS_Store
+
+# Application specific
+*.dSYM.zip
+*.dSYM
+
+# Backup files
+*~
+*.swp
+*.swo
+*~.nib
+*.bak
+.tmp/
+
+# Build ephemeral files
+/node_modules
+/Config
+default.profraw
+/buildServer.json

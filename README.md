@@ -26,12 +26,12 @@ gtty enter [--file <path>] [--ai <provider>] [--ai-session <id>]
 
 The AI binary is resolved from the environment:
 
-| Provider  | Env var                 | Default binary |
-| --------- | ----------------------- | -------------- |
-| `agy`     | `$env.ANTIGRAVITY_CLI` | `ag`           |
-| `claude`  | `$env.CLAUDE`          | `cl`           |
-| `gemini`  | `$env.GEMINI`          | `gi`           |
-| `pi`      | `$env.PI`              | `pi`           |
+| Provider | Env var                | Default binary |
+| -------- | ---------------------- | -------------- |
+| `agy`    | `$env.ANTIGRAVITY_CLI` | `ag`           |
+| `claude` | `$env.CLAUDE`          | `cl`           |
+| `gemini` | `$env.GEMINI`          | `gi`           |
+| `pi`     | `$env.PI`              | `pi`           |
 
 > [!NOTE]
 > The AI command is typed into t2 but **not sent**

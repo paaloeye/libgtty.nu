@@ -9,6 +9,7 @@ subcommands: `gtty enter`, `gtty leave`, and `gtty surface siblings`.
 ## Antigravity (agy) & Gemini Context
 
 As a Gemini agent (via Antigravity/`agy`), note the following integration points:
+
 - `libgtty` supports launching `agy` directly in a pane using `gtty enter --ai agy`.
 - The AI binary is resolved via the `$env.ANTIGRAVITY_CLI` environment variable (defaults to `ag`).
 - When writing temporary scratch scripts or files for testing, consider using the Antigravity artifact directory (`<appDataDir>/brain/<conversation-id>/scratch/`).

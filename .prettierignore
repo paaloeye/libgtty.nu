@@ -1,0 +1,10 @@
+# Build artifacts
+.build/
+
+# Dependencies
+.swiftpm/
+Packages/
+
+.editorconfig
+.gitignore
+bun.lock

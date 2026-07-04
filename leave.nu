@@ -1,3 +1,11 @@
+#
+#  SPDX-License-Identifier: MIT
+#  Copyright (c) 2026 Paal Øye-Strømme
+#
+#  leave.nu
+#  libgtty
+#
+
 use lib.nu *
 
 # Close sibling surfaces of the workspace created by `gtty enter`.

@@ -1,3 +1,11 @@
+#
+#  SPDX-License-Identifier: MIT
+#  Copyright (c) 2026 Paal Øye-Strømme
+#
+#  lib.nu
+#  libgtty
+#
+
 export use ../lib.nu [ ghostty_bundle_id ]
 
 export const TINT_DIM   = "#1c1214"

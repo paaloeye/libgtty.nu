@@ -1,3 +1,10 @@
+#
+#  SPDX-License-Identifier: MIT
+#  Copyright (c) 2026 Paal Øye-Strømme
+#
+#  siblings.nu
+#  libgtty
+#
 
 use ../completion.nu *
 use lib.nu *

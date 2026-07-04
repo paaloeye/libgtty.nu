@@ -1,3 +1,10 @@
+#
+#  SPDX-License-Identifier: MIT
+#  Copyright (c) 2026 Paal Øye-Strømme
+#
+#  completion.nu
+#  libgtty
+#
 
 const options = {
     case_sensitive: false,

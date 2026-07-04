@@ -1,0 +1,7 @@
+{
+  "IgnoreDefaults": true,
+  "Disable": {
+    "IndentSize": true
+  },
+  "Exclude": ["bun\\.lockb$"]
+}

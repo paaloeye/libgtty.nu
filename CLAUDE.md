@@ -27,7 +27,7 @@ lib/gtty/
 It must not import from outside the `gtty/` directory — `../mood.nu` is a `mij`
 internal and is not available here.
 
-### _panes cache
+### \_panes cache
 
 `_panes` queries Ghostty via AppleScript and caches the result in `stor`
 (Nushell's in-memory SQLite) under table `GTTY_SURFACES` with a 60-second TTL.
