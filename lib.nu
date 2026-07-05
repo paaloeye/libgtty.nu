@@ -50,3 +50,14 @@ export def my_index [bundle_id: string] {
         end tell" | str trim | split row ":")
     { index: ($info.0 | into int), count: ($info.1 | into int) }
 }
+
+# Ensure the current Nushell version is 0.114.0 or higher.
+export def ensure_nu_version [] {
+    let ver = (version)
+    let is_valid = (($ver.major > 0) or ($ver.major == 0 and $ver.minor >= 114))
+    if not $is_valid {
+        error make {
+            msg: $"Nushell version ($ver.version) is not supported. Nushell 0.114.0 or higher is required."
+        }
+    }
+}

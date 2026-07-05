@@ -19,7 +19,7 @@ workspace {
         break direction=v
 
         surface {
-            command "fs"
+            type "fs"
         }
     }
 

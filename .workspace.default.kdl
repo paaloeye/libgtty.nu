@@ -12,14 +12,14 @@ workspace {
 
     box direction=h {
         surface {
-            type "fs"
+            type "editor"
             argv "README.md"
         }
 
         break direction=v
 
         surface {
-            command "fs"
+            type "fs"
         }
     }
 

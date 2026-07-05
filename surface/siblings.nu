@@ -19,6 +19,8 @@ export def main [
     --interval: duration = 5sec            # interval between sends (auto-accept only)
     --keep-alive                           # prevent idle sleep while running (auto-accept only; display may dim)
 ] {
+    ensure_nu_version
+
     if $offset == null {
         error make { msg: "--offset is required (e.g. +1, -1, -2..+1)" }
     }
@@ -77,13 +79,13 @@ def parse_args [raw: string] {
 
 def do_kill [target: record, opts: record] {
     let tty_base = ($target.tty | path basename)
-    let signame  = ($opts.signal | str upcase)
+    let signame  = ($opts.signal | str uppercase)
 
     tint $target.tty $TINT_DIM
     print $"Pane ($target.index) tinted, signal ($signame) pending"
 
     if $opts.confirm {
-        let answer = (input $"Send ($signame) to pane ($target.index), TTY ($tty_base)? [yes/no]: " | str trim | str downcase)
+        let answer = (input $"Send ($signame) to pane ($target.index), TTY ($tty_base)? [yes/no]: " | str trim | str lowercase)
         if $answer != "yes" {
             tint $target.tty ""
             print "Aborted."

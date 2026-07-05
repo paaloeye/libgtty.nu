@@ -49,7 +49,7 @@ export def main [
 
             # match flags
             let ctrl = ($key.modifiers | any { str contains "control" })
-            let ascii = ($key.code | encode utf8 | first) <= 127
+            let ascii = ($key.code | encode utf8 | first | into int) <= 127
 
             match [$key.key_type $key.code $ctrl $ascii] {
                 # exit

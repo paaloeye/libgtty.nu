@@ -5,7 +5,7 @@ workspace surface layouts and pane interactions via the native [Ghostty AppleScr
 
 ## Features
 
-- **Workspace Layout Orchestration**: Instantly build or tear down structured 4-surface layouts.
+- **Workspace Layout Orchestration**: Instantly build or tear down structured multi-surface layouts.
 - **Surface Sibling Interactions**: Focus, flash, tint, or gracefully terminate process trees on targeted sibling panes.
 - **Low-Latency Keyboard Broadcasting**: Mirror keystrokes and inputs to multiple sibling surfaces in real-time.
 - **Fuzzy Tab Completion**: Live terminal introspection with cached results (`stor` database with 60-second TTL).
@@ -59,7 +59,7 @@ use ./lib/gtty
 
 ### `gtty enter`
 
-Builds a structured 4-surface workspace layout in the current tab.
+Builds a structured multi-surface workspace layout in the current tab.
 
 ```nushell
 gtty enter [--file <path>] [--ai <provider>] [--ai-session <id>]
@@ -104,7 +104,7 @@ The AI binary is resolved from the environment:
 
 ### `gtty leave`
 
-Closes the 3 sibling panes created by `gtty enter`. This command requires exactly 4 panes in the current tab. The
+Closes the sibling panes created by `gtty enter`. This command requires a multi-pane workspace in the current tab. The
 tab itself remains open.
 
 ```nushell
@@ -218,6 +218,13 @@ lib/gtty/
     lib.nu          — tint/flash helpers and TINT_DIM / TINT_FLASH colour constants
     broadcast/      — Swift broadcast engine package
 ```
+
+---
+
+## Area of active development
+
+- [ ] Tint colour and change of colour scheme
+- [ ] KDL based layout workspace configuration
 
 ---
 

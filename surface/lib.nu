@@ -6,7 +6,7 @@
 #  libgtty.nu
 #
 
-export use ../lib.nu [ ghostty_bundle_id my_index ]
+export use ../lib.nu [ ghostty_bundle_id my_index ensure_nu_version ]
 
 export const TINT_DIM   = "#1c1214"
 export const TINT_FLASH = "#2a1015"
@@ -106,7 +106,7 @@ const CHAR_TO_KEY = {
 
 export def send_char [bundle_id: string, index: int, tab: int, char: string, modifiers: list<string>] {
     let mapped = ($CHAR_TO_KEY | get -o $char)
-    let is_ascii_letter = ($char | str downcase) =~ '^[a-z]$'
+    let is_ascii_letter = ($char | str lowercase) =~ '^[a-z]$'
 
     # Non-ASCII chars (e.g. æ, ø, å) have no Ghostty key name; send as text directly
     if $mapped == null and not $is_ascii_letter {
@@ -117,8 +117,8 @@ export def send_char [bundle_id: string, index: int, tab: int, char: string, mod
         return
     }
 
-    let key   = if $mapped != null { $mapped.0 } else { $char | str downcase }
-    let shift = if $mapped != null { $mapped.1 } else { $char != ($char | str downcase) }
+    let key   = if $mapped != null { $mapped.0 } else { $char | str lowercase }
+    let shift = if $mapped != null { $mapped.1 } else { $char != ($char | str lowercase) }
 
     # Strip shift from modifiers — it's handled explicitly via `extra` to avoid duplicates
     let mods_without_shift = ($modifiers | where { not ($in | str contains "shift") })

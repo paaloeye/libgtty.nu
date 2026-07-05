@@ -17,51 +17,42 @@ use lib.nu *
 export def main [
     --force (-f)  # skip confirmation prompt
 ] {
-    let bundle_id  = (ghostty_bundle_id)
-    let info       = (my_index $bundle_id)
-    let me         = $info.index
-    let n          = $info.count
+    ensure_nu_version
 
-    if $n != 4 {
-        error make { msg: $"Expected 4 panes, found ($n) — is this a workspace tab?" }
+    let bundle_id  = (ghostty_bundle_id)
+
+    # Get all terminal IDs and the focused terminal's ID to prevent index shifting bugs during closure
+    let terminal_ids = (^osascript -e $"tell application id \"($bundle_id)\" to get id of every terminal of selected tab of front window" | str trim | split row ", ")
+    let focused_id   = (^osascript -e $"tell application id \"($bundle_id)\" to get id of focused terminal of selected tab of front window" | str trim)
+    let n            = ($terminal_ids | length)
+
+    if $n <= 1 {
+        error make { msg: "No siblings found — this does not appear to be a multi-pane workspace tab" }
     }
 
     if not $force {
-        let answer = (input "Close workspace siblings? [yes/no]: " | str trim | str downcase)
+        let answer = (input "Close workspace siblings? [yes/no]: " | str trim | str lowercase)
         if $answer != "yes" {
             print "Aborted."
             return
         }
     }
 
-    let to_close = (1..$n | each { $in } | reverse | where { $in != $me })
+    let to_close = ($terminal_ids | where { $in != $focused_id })
 
-    # Try the first close; a failure means the split is zoomed and the
-    # AppleScript close API cannot reach the hidden panes. Unzoom and retry.
-    let first = ($to_close | first)
-    let rest  = ($to_close | skip 1)
+    for tid in $to_close {
+        let ok = (try {
+            ^osascript -e $"tell application id \"($bundle_id)\" to close \(first terminal of selected tab of front window whose id is \"($tid)\"\)" out+err> /dev/null
+            true
+        } catch {
+            false
+        })
 
-    let ok = (try {
-        ^osascript -e $"tell application id \"($bundle_id)\" to close terminal ($first) of selected tab of front window" out+err> /dev/null
-        true
-    } catch {
-        false
-    })
-
-    # Unzoom the focused split so all panes become reachable, then close all.
-    if not $ok {
-        ^osascript -e $"tell application id \"($bundle_id)\" to perform action \"toggle_split_zoom\" on terminal ($me) of selected tab of front window" out+err> /dev/null
-        for i in $to_close {
-            ^osascript -e $"tell application id \"($bundle_id)\" to close terminal ($i) of selected tab of front window" out+err> /dev/null
+        if not $ok {
+            # Unzoom the focused split and retry closing the target terminal
+            ^osascript -e $"tell application id \"($bundle_id)\" to perform action \"toggle_split_zoom\" on focused terminal of selected tab of front window" out+err> /dev/null
+            ^osascript -e $"tell application id \"($bundle_id)\" to close \(first terminal of selected tab of front window whose id is \"($tid)\"\)"
         }
-
-        focus_first_terminal $bundle_id
-        return
-    }
-
-    # Close the rest of still running siblings
-    for i in $rest {
-        ^osascript -e $"tell application id \"($bundle_id)\" to close terminal ($i) of selected tab of front window"
     }
 
     focus_first_terminal $bundle_id

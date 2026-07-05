@@ -4,6 +4,9 @@ Common gotchas and pitfalls when working with **Agents** in AI-aided fashion.
 
 This file provides guidance to **Agent** when it keeps making the same mistakes.
 
+> [!TIP]
+> For language- or environment-specific gotchas (such as Nushell or shell scripts), refer to the respective `GOTCHA.<lang>.md` files in the module root (for example, [GOTCHA.nushell.md](./GOTCHA.nushell.md)).
+
 ## 🤖 Command Substitution in Git Commit Messages (ai.nu)
 
 ### Issue
