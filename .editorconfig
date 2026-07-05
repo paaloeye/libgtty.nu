@@ -16,3 +16,6 @@ indent_size = 4
 
 [*.nu]
 indent_size = 4
+
+[*.kdl]
+indent_size = 4

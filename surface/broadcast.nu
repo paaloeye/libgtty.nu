@@ -3,7 +3,7 @@
 #  Copyright (c) 2026 Paal Øye-Strømme
 #
 #  broadcast.nu
-#  libgtty
+#  libgtty.nu
 #
 
 use ../completion.nu *

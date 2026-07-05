@@ -1,0 +1,46 @@
+// Ref: https://kdl.dev/
+
+workspace {
+
+    // Resulting surface configuration using keyboard:
+    // - cmd-shift-d
+    // - shift-option-k
+    // - cmd-d
+    // - shift-option-j
+    // - cmd-d
+    // - cmd-d
+
+    box direction=h {
+        surface {
+            type "fs"
+            argv "README.md"
+        }
+
+        break direction=v
+
+        surface {
+            command "fs"
+        }
+    }
+
+    split direction=h
+
+    box {
+        surface {
+            type "ai"
+            start_suspended true
+        }
+
+        break direction=v
+
+        surface {
+            type "fs"
+        }
+
+        split direction=v
+
+        surface {
+            type "git"
+        }
+    }
+}

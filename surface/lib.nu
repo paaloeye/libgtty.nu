@@ -3,7 +3,7 @@
 #  Copyright (c) 2026 Paal Øye-Strømme
 #
 #  lib.nu
-#  libgtty
+#  libgtty.nu
 #
 
 export use ../lib.nu [ ghostty_bundle_id my_index ]

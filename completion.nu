@@ -3,7 +3,7 @@
 #  Copyright (c) 2026 Paal Øye-Strømme
 #
 #  completion.nu
-#  libgtty
+#  libgtty.nu
 #
 
 use lib.nu [ ghostty_bundle_id ]

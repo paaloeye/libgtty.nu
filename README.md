@@ -224,6 +224,8 @@ lib/gtty/
 ## References
 
 - [Ghostty AppleScript Documentation](https://ghostty.org/docs/features/applescript)
+- [KDL format support in Nushell](https://github.com/nushell/nushell/pull/18219)
+- [KDL format spec](https://kdl.dev/spec/)
 
 > [!CAUTION]
 > This file was refined with AI assistance (Antigravity).

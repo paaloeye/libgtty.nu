@@ -3,7 +3,7 @@
 #  Copyright (c) 2026 Paal Øye-Strømme
 #
 #  mod.nu
-#  libgtty
+#  libgtty.nu
 #
 
 export use enter.nu

@@ -3,7 +3,7 @@
 #  Copyright (c) 2026 Paal Øye-Strømme
 #
 #  lib.nu
-#  libgtty
+#  libgtty.nu
 #
 
 # Walk the process tree to find the nearest macOS app bundle ancestor and return its CFBundleIdentifier.
