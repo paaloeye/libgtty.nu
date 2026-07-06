@@ -48,7 +48,7 @@ def panes_cache_get [] {
     try {
         let row = (stor open | query db $"SELECT raw, cached_at FROM ($SURFACES_TABLE) LIMIT 1" | get 0?)
         if $row == null { return null }
-        let age = (date now) - $row.cached_at
+        let age = (date now) - ($row.cached_at | into datetime)
         if $age > $SURFACES_TTL { return null }
         $row.raw
     } catch { null }
