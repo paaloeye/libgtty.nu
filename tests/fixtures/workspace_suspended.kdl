@@ -1,0 +1,10 @@
+// Ref: https://kdl.dev/
+
+workspace {
+    box {
+        surface {
+            type "ai"
+            start_suspended true
+        }
+    }
+}

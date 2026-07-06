@@ -23,7 +23,7 @@ default.profraw
 .tmp/
 
 # Build ephemeral files
-/node_modules
+/node_modules/
 
 # Third-party vendor dependencies
 /vendor/

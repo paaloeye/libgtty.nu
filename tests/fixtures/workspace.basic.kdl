@@ -1,0 +1,9 @@
+// Ref: https://kdl.dev/
+
+workspace {
+    box {
+        surface {
+            type "editor"
+        }
+    }
+}

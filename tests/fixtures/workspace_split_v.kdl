@@ -1,0 +1,15 @@
+// Ref: https://kdl.dev/
+
+workspace {
+    box {
+        surface {
+            type "editor"
+        }
+    }
+    split direction=h
+    box {
+        surface {
+            type "git"
+        }
+    }
+}

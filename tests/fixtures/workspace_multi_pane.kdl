@@ -1,0 +1,23 @@
+// Ref: https://kdl.dev/
+
+workspace {
+    box direction=h {
+        surface {
+            type "editor"
+        }
+        break direction=v
+        surface {
+            type "fs"
+        }
+    }
+    split direction=h
+    box {
+        surface {
+            type "ai"
+        }
+        break direction=v
+        surface {
+            type "git"
+        }
+    }
+}

@@ -1,0 +1,39 @@
+name: Run Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    name: Run Nushell Tests
+    strategy:
+      matrix:
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Nushell
+        uses: hustcer/setup-nu@v3
+        with:
+          version: "0.114.0"
+
+      - name: Checkout vendored dependencies
+        run: |
+          git clone https://github.com/vyadh/nutest.git vendor/nutest
+          git -C vendor/nutest checkout v1.2.0
+
+      - name: Build Low-Latency Swift Broadcasting Engine
+        run: |
+          cd surface/broadcast
+          swift build -c release
+
+      - name: Run Tests
+        shell: nu {0}
+        run: |
+          scripts/run_tests.nu --fail

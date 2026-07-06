@@ -60,30 +60,33 @@ use ./lib/gtty
 ### `gtty enter`
 
 Builds a structured multi-surface workspace layout in the current tab.
+The layout is dynamically configured from a local `.workspace.kdl` or `.workspace.default.kdl`
+layout file (see [Workspace Layout Configuration](#workspace-layout-configuration) for customisation details).
 
 ```nushell
-gtty enter [--file <path>] [--ai <provider>] [--ai-session <id>]
+gtty enter [target_dir] [--file <path>] [--ai <provider>] [--ai-session <id>]
 ```
 
-#### Visual Layout
+#### Default Visual Layout
 
 ```text
-+-----------------------+-----------------------+
-|                       |                       |
-|   t1: editor <file>   |   t3: editor          |
-|                       |                       |
-+-----------------------+-----------------------+
-|                       |                       |
-|   t2: <ai>            |   t4: gitui           |
-|                       |                       |
-+-----------------------+-----------------------+
++-----------------------+------------------------------+
+|                       |                              |
+|   t1: nnn README.md   |  t3: nnn                     |
+|                       |                              |
++-----------------------+------------------------------+
+|                       |              |               |
+|   t2: <ai>            |  t3: nnn     |  t5: gitui    |
+|                       |              |               |
++-----------------------+------------------------------+
 ```
 
-| Flag           | Default      | Description                                                        |
-| :------------- | :----------- | :----------------------------------------------------------------- |
-| `--file`       | First README | File to open in the editor (defaults to the first existing README) |
-| `--ai`         | `agy`        | AI provider to launch in t2 (`agy`, `claude`, `gemini`, or `pi`)   |
-| `--ai-session` | `""`         | Session ID to resume with `--resume` (provider-agnostic)           |
+| Argument / Flag | Default      | Description                                                        |
+| :-------------- | :----------- | :----------------------------------------------------------------- |
+| `target_dir`    | Current Dir  | Target directory to enter and set as the initial working directory |
+| `--file`        | First README | File to open in the editor (defaults to the first existing README) |
+| `--ai`          | `agy`        | AI provider to launch in t2 (`agy`, `claude`, `gemini`, or `pi`)   |
+| `--ai-session`  | `""`         | Session ID to resume with `--resume` (provider-agnostic)           |
 
 The AI binary is resolved from the environment:
 
@@ -179,6 +182,83 @@ gtty surface broadcast --offset <offset> [--engine <engine>]
 
 ---
 
+## Workspace Layout Configuration
+
+Workspace pane layouts are dynamically defined and compiled using [KDL](https://kdl.dev/) configuration files.
+When executing `gtty enter`, the layout file is resolved in the following priority:
+
+1. **Local Custom Configuration**: `.workspace.kdl` in the target directory.
+2. **Module Default Configuration**: Fallback to the `.workspace.default.kdl` file distributed with the `libgtty` package.
+
+---
+
+### KDL Layout Schema
+
+A workspace layout configuration uses a structured `workspace` block containing hierarchical layout containers and surfaces.
+
+#### Layout Nodes
+
+- **`workspace` (Root)**: Represents the top-level container of the tab.
+- **`box`**: Group of surfaces or nested splits layout container. Supports an optional `direction` attribute (`h` for horizontal or `v` for vertical, defaulting to `h`).
+- **`split direction=<h|v>`**: Splits the current pane container or box in the specified direction.
+- **`break direction=<h|v>`**: Splits within a layout box block.
+- **`surface`**: Individual terminal pane representing a process or command.
+
+#### Surface Properties
+
+Inside a `surface` block, you can configure the target pane details:
+
+- **`type`**: The role or predefined application command of the pane (`editor`, `fs` for file manager, `ai`, or `git`).
+- **`command`**: Execute a custom shell command instead of predefined application types (e.g. `command "htop -d 10"`).
+- **`argv`**: Arguments to pass to the predefined application (supported for `editor` and `fs` types).
+- **`start_suspended`**: A boolean flag (`true`/`false`). If set to `true`, the layout compiler prevents sending the **Enter** key automatically to the target pane, keeping the command typed but unexecuted.
+
+---
+
+### Layout Examples
+
+Below is a typical multi-pane workspace layout configuration utilising horizontal/vertical breaks and split structures:
+
+```kdl
+workspace {
+    box direction=h {
+        surface {
+            type "editor"
+            argv "README.md"
+        }
+
+        break direction=v
+
+        surface {
+            type "fs"
+        }
+    }
+
+    split direction=h
+
+    box {
+        surface {
+            type "ai"
+            start_suspended true
+        }
+
+        break direction=v
+
+        surface {
+            type "fs"
+        }
+
+        split direction=v
+
+        surface {
+            type "git"
+        }
+    }
+}
+```
+
+---
+
 ## Tab Completion
 
 All flags support native `--<TAB>` completion. The `--offset` flag queries Ghostty live and presents sibling pane
@@ -221,10 +301,80 @@ lib/gtty/
 
 ---
 
+## Testing
+
+The project utilises the [nutest](https://github.com/vyadh/nutest) testing framework for Nushell to maintain a
+comprehensive and reliable suite of unit and integration tests.
+
+### Running Tests Locally
+
+To run the full test suite locally, use the provided Nushell test execution script:
+
+```nushell
+./scripts/run_tests.nu --fail
+```
+
+This script automates the entire test orchestration lifecycle:
+
+1. Clones the correct version of the `nutest` framework into `vendor/nutest` if it is not already present.
+2. Changes to the repository root directory to ensure reliable resolution of relative module and asset paths.
+3. Spawns Nushell cleanly without loading user configurations (`--no-config-file`) to execute the test runner.
+
+#### Options
+
+The test script supports filtering and configuration options:
+
+| Flag             | Type     | Description                                                           |
+| :--------------- | :------- | :-------------------------------------------------------------------- |
+| `path`           | `string` | Directory to discover tests in (defaults to `tests`).                 |
+| `--match-suites` | `string` | Regular expression to match against suite names.                      |
+| `--match-tests`  | `string` | Regular expression to match against test names.                       |
+| `--fail`         | `switch` | Exit with a non-zero status code if any tests fail (ideal for CI/CD). |
+| `--display`      | `string` | Display options during test execution (defaults to terminal).         |
+
+---
+
+### Test Coverage
+
+The test suite covers key elements of the `libgtty` architecture:
+
+- **Core Behaviours (`tests/test_lib.nu`)**:
+  - Validates that the active Nushell environment meets version requirements.
+  - Verifies Ghostty application bundle identifier resolution and fallback behaviours under different environment states.
+- **Tab Completions (`tests/test_completions.nu`)**:
+  - Exercises static completers for actions, signal options, registered AI providers, and broadcast engines.
+  - Seeds, queries, and asserts on the in-process SQLite cache lifecycle using Nushell's in-memory `stor` database.
+- **Layout Compilations (`tests/test_compile_layout.nu`)**:
+  - Compiles multiple KDL workspace definitions from `tests/fixtures/` and parses them into target-platform
+    AppleScript commands.
+  - Verifies compilation behaviour for horizontal and vertical splits, multi-pane grids, suspended surfaces, and
+    custom command injection.
+
+---
+
+### Continuous Integration (CI)
+
+A GitHub Actions workflow is defined at `.github/workflows/test.yml` to automatically verify every push and pull
+request targeting the `main` branch.
+
+The CI environment runs on a `macos-latest` runner and executes the following sequence:
+
+1. Check out the repository.
+2. Install and configure Nushell (pinned to `0.114.0`).
+3. Clone and pin the `nutest` framework dependency (`v1.2.0`).
+4. Build the high-performance Swift broadcasting engine inside `surface/broadcast`.
+5. Run the Nushell test suite in fail-fast mode.
+
+> [!NOTE]
+> Tests that inspect Nushell's `stor` SQLite tables run synchronously within the same test context. This avoids
+> database race conditions which can occur during parallel test runs.
+
+---
+
 ## Area of active development
 
 - [ ] Tint colour and change of colour scheme
-- [ ] KDL based layout workspace configuration
+- [x] KDL based layout workspace configuration
 
 ---
 

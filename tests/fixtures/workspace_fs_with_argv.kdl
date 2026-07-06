@@ -1,0 +1,10 @@
+// Ref: https://kdl.dev/
+
+workspace {
+    box {
+        surface {
+            type "fs"
+            argv "README.md"
+        }
+    }
+}

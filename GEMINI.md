@@ -32,6 +32,7 @@ As a Gemini agent (via Antigravity/`agy`), note the following integration points
 - NEVER use `[x]` or `[ ]` in Markdown tables; USE ✅ / 🔲 / instead. **Reason**: it's not supported
 - PREFER [GitHub Emoji API](https://api.github.com/emojis) over Unicode Emoji
 - ALWAYS add footer to new Markdown files with a AI generated content banner (!CAUTION)
+- PREFER `pre-commit run -a` (or `pre-commit run --all-files`) to execute code formatting and checks instead of running direct commands like `bunx`, `npx`, `prettier`
 - PREFER 120 characters per line
 
 ## A Tour of Banners
