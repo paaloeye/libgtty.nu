@@ -11,8 +11,22 @@ jobs:
     name: Run Nushell Tests
     strategy:
       matrix:
-        os: [macos-latest]
-    runs-on: ${{ matrix.os }}
+        arch: ["", "-intel"]
+
+        # Ref: https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md
+        # Ref: https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md
+        # Ref: https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md
+        # Ref: https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md
+        #
+        os_bundle:
+          - os: macos-26
+            xcode: 26.3
+          - os: macos-15
+            xcode: 26.3
+          - os: macos-15
+            xcode: 16.3
+
+    runs-on: "${{ matrix.os_bundle.os }}${{ matrix.arch }}"
 
     steps:
       - name: Checkout Code
@@ -23,6 +37,15 @@ jobs:
         with:
           version: "0.114.0"
 
+      - name: Xcode Versions
+        run: ls -la /Applications/Xcode*
+
+      - name: Xcode Select
+        run: "sudo xcode-select -s /Applications/Xcode_${{ matrix.os_bundle.xcode }}.app"
+
+      - name: Xcode Select
+        run: xcode-select -p
+
       - name: Checkout vendored dependencies
         run: |
           git clone https://github.com/vyadh/nutest.git vendor/nutest
@@ -31,7 +54,7 @@ jobs:
       - name: Build Low-Latency Swift Broadcasting Engine
         run: |
           cd surface/broadcast
-          swift build -c release
+          xcrun swift build -c release
 
       - name: Run Tests
         shell: nu {0}
