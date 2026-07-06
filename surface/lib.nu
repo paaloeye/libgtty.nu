@@ -138,6 +138,7 @@ const NU_TO_GHOSTTY = {
     enter:     enter
     backspace: backspace
     tab:       tab
+    backtab:   tab
     up:        arrowUp
     down:      arrowDown
     left:      arrowLeft
@@ -156,7 +157,12 @@ export def send_other [bundle_id: string, index: int, tab: int, code: string, mo
     let ghostty_key = ($NU_TO_GHOSTTY | get -o $code)
     if $ghostty_key == null { return }
 
-    let mods_str = (nu_mods_to_ghostty $modifiers [])
+    mut extra = []
+    if $code == "backtab" {
+        $extra = ($extra | append "shift")
+    }
+
+    let mods_str = (nu_mods_to_ghostty $modifiers $extra)
     let ghostty_key_with_mod = $"\"($ghostty_key)\" ($mods_str)"
     # print $ghostty_key_with_mod
 
@@ -172,7 +178,7 @@ def nu_mods_to_ghostty [modifiers: list<string>, extra: list<string>] {
     if ($modifiers | any { str contains "control" }) { $mods = ($mods | append "control") }
     if ($modifiers | any { str contains "alt" })     { $mods = ($mods | append "option") }
     if ($modifiers | any { str contains "super" })   { $mods = ($mods | append "command") }
-    if ($mods | is-empty) { '' } else { $" modifiers \"($mods | str join ',')\"" }
+    if ($mods | is-empty) { '' } else { $" modifiers \"($mods | uniq | str join ',')\"" }
 }
 
 export def send_input [bundle_id: string, index: int, tab: int, text: string] {

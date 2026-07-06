@@ -238,6 +238,7 @@ private func readKey() -> KeyEvent? {
             case 0x44: return .special("arrowLeft")
             case 0x48: return .special("home")
             case 0x46: return .special("end")
+            case 0x5A: return .special("backtab")
             case 0x32 where n >= 4 && buf[3] == 0x7E: return .special("insert")
             case 0x33 where n >= 4 && buf[3] == 0x7E: return .special("delete")
             case 0x35 where n >= 4 && buf[3] == 0x7E: return .special("pageUp")
@@ -377,7 +378,11 @@ struct Broadcast {
                 focusSurface(bundleId: bundleId, surfaceIndex: myIdx)
 
             case .special(let name):
-                for t in targets { t.sendKey(name) }
+                if name == "backtab" {
+                    for t in targets { t.sendKeyMods("tab", "shift") }
+                } else {
+                    for t in targets { t.sendKey(name) }
+                }
 
             case .char(let s, let ctrl, let ascii):
                 if ctrl && (s == "c" || s == "d") { break loop }
