@@ -85,6 +85,13 @@ gtty surface siblings --offset <offset> --action <action> [options]
   gtty surface siblings --offset +1 --action focus
   ```
 
+<details>
+<summary>See it in action!</summary>
+
+https://github.com/user-attachments/assets/5e6c77cb-6067-4325-9ca6-250761755a11
+
+</details>
+
 ---
 
 ### `gtty enter`
