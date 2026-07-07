@@ -1,14 +1,14 @@
-# libgtty
+# libgtty.nu
 
 [Nushell](https://www.nushell.sh/) module designed to manage and orchestrate [Ghostty](https://ghostty.org/)
 workspace surface layouts and pane interactions via the native [Ghostty AppleScript API](https://ghostty.org/docs/features/applescript).
 
 ## Features
 
-- **Workspace Layout Orchestration**: Instantly build or tear down structured multi-surface layouts.
-- **Surface Sibling Interactions**: Focus, flash, tint, or gracefully terminate process trees on targeted sibling panes.
-- **Low-Latency Keyboard Broadcasting**: Mirror keystrokes and inputs to multiple sibling surfaces in real-time.
-- **Fuzzy Tab Completion**: Live terminal introspection with cached results (`stor` database with 60-second TTL).
+- **Surface Sibling Interactions**: Focus, flash, tint, or gracefully terminate process trees on targeted sibling panes
+- **Low-Latency Keyboard Broadcasting**: Mirror keystrokes and inputs to multiple sibling surfaces in real-time
+- **Fuzzy Tab Completion**: Live terminal introspection with cached results (`stor` database with 60-second TTL)
+- **Workspace Layout Orchestration**: Instantly build or tear down structured multi-surface layouts
 
 ---
 
@@ -20,17 +20,17 @@ workspace surface layouts and pane interactions via the native [Ghostty AppleScr
 > - **Pending Upstream PR**: [ghostty-org/ghostty#13180](https://github.com/ghostty-org/ghostty/pull/13180)
 > - **Required Fork**: [paaloeye/ghostty (feat/applescript-send-key-text-part-1)](https://github.com/paaloeye/ghostty/tree/feat/applescript-send-key-text-part-1)
 
-- **Operating System**: macOS with Ghostty installed
-- **Shell**: Nushell ≥ 0.114
-- **Swift**: Toolchain ≥ 6.0 (required to build the high-performance broadcast engine)
+- **Operating System**: **macOS** with **Ghostty** installed
+- **Shell**: **Nushell** ≥ 0.114
+- **Swift**: Toolchain ≥ 6.0 (required to build the low-latency broadcast engine)
 
 ---
 
 ## Installation & Setup
 
-### 1. Compile the Swift Broadcast Engine
+### 1. Compile Swift Broadcast Engine
 
-The high-performance broadcast engine requires compilation before use:
+The low-latency broadcast engine requires compilation before use:
 
 ```bash
 cd surface/broadcast
@@ -41,21 +41,51 @@ This compiles the executable binary `gtty-surface-broadcast` inside `surface/bro
 
 ### 2. Loading the Module
 
-Import `libgtty` into your Nushell session:
+Add the following to your `config.nu`:
 
 ```nushell
 use /path/to/libgtty
 ```
 
-Alternatively, load it through `scripts/init.nu`:
-
-```nushell
-use ./lib/gtty
-```
-
 ---
 
 ## Commands
+
+### `gtty surface siblings`
+
+Perform a one-shot or looping action on a sibling pane by relative offset.
+
+```nushell
+gtty surface siblings --offset <offset> --action <action> [options]
+```
+
+| Flag         | Default    | Description                                                |
+| :----------- | :--------- | :--------------------------------------------------------- |
+| `--offset`   | _Required_ | Relative offset from the focused pane (e.g. `+1`, `-1`)    |
+| `--action`   | _Required_ | Action to perform (`kill`, `auto-accept`, or `focus`)      |
+| `--args`     | `""`       | Key-value pairs (e.g. `signal=term,confirm=true`)          |
+| `--max`      | `1984`     | Maximum command sends (`auto-accept` action only)          |
+| `--interval` | `5sec`     | Duration between command sends (`auto-accept` action only) |
+
+#### Available Actions
+
+- **`kill`**: Send a signal to all processes attached to the target pane's TTY.
+  ```nushell
+  gtty surface siblings --offset +1 --action kill
+  gtty surface siblings --offset +1 --action kill --args signal=hup,confirm=false
+  ```
+- **`auto-accept`**: Repeatedly send **Enter** to an agent surface to auto-accept prompts. Tints the target pane dark red
+  (`#1c1214`) while active. Terminate with `Ctrl+C`.
+  ```nushell
+  gtty surface siblings --offset -1 --action auto-accept
+  gtty surface siblings --offset -1 --action auto-accept --max 10 --interval 10sec
+  ```
+- **`focus`**: Move keyboard focus to the target pane with a brief visual flash confirmation.
+  ```nushell
+  gtty surface siblings --offset +1 --action focus
+  ```
+
+---
 
 ### `gtty enter`
 
@@ -124,42 +154,6 @@ gtty leave [--force]
 
 ---
 
-### `gtty surface siblings`
-
-Perform a one-shot or looping action on a sibling pane by relative offset.
-
-```nushell
-gtty surface siblings --offset <offset> --action <action> [options]
-```
-
-| Flag         | Default    | Description                                                |
-| :----------- | :--------- | :--------------------------------------------------------- |
-| `--offset`   | _Required_ | Relative offset from the focused pane (e.g. `+1`, `-1`)    |
-| `--action`   | _Required_ | Action to perform (`kill`, `auto-accept`, or `focus`)      |
-| `--args`     | `""`       | Key-value pairs (e.g. `signal=term,confirm=true`)          |
-| `--max`      | `1984`     | Maximum command sends (`auto-accept` action only)          |
-| `--interval` | `5sec`     | Duration between command sends (`auto-accept` action only) |
-
-#### Available Actions
-
-- **`kill`**: Send a signal to all processes attached to the target pane's TTY.
-  ```nushell
-  gtty surface siblings --offset +1 --action kill
-  gtty surface siblings --offset +1 --action kill --args signal=hup,confirm=false
-  ```
-- **`auto-accept`**: Repeatedly send **Enter** to an agent surface to auto-accept prompts. Tints the target pane dark red
-  (`#1c1214`) while active. Terminate with `Ctrl+C`.
-  ```nushell
-  gtty surface siblings --offset -1 --action auto-accept
-  gtty surface siblings --offset -1 --action auto-accept --max 10 --interval 10sec
-  ```
-- **`focus`**: Move keyboard focus to the target pane with a brief visual flash confirmation.
-  ```nushell
-  gtty surface siblings --offset +1 --action focus
-  ```
-
----
-
 ### `gtty surface broadcast`
 
 Broadcast keyboard input in real-time to one or more sibling Ghostty surfaces.
@@ -187,8 +181,8 @@ gtty surface broadcast --offset <offset> [--engine <engine>]
 Workspace pane layouts are dynamically defined and compiled using [KDL](https://kdl.dev/) configuration files.
 When executing `gtty enter`, the layout file is resolved in the following priority:
 
-1. **Local Custom Configuration**: `.workspace.kdl` in the target directory.
-2. **Module Default Configuration**: Fallback to the `.workspace.default.kdl` file distributed with the `libgtty` package.
+1. **Workspace Configuration**: `.workspace.kdl` in the workspace directory.
+2. **Default Configuration**: Fallback to the `.workspace.default.kdl` file distributed with the `libgtty.nu` itself.
 
 ---
 
@@ -336,7 +330,7 @@ The test script supports filtering and configuration options:
 
 ### Test Coverage
 
-The test suite covers key elements of the `libgtty` architecture:
+The test suite covers key elements of the `libgtty.nu` architecture:
 
 - **Core Behaviours (`tests/test_lib.nu`)**:
   - Validates that the active Nushell environment meets version requirements.
