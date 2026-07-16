@@ -5,17 +5,9 @@ workspace {
         surface {
             type "editor"
         }
-        break direction=v
-        surface {
-            type "fs"
-        }
     }
-    break direction=h
+    break direction=v
     box {
-        surface {
-            type "ai"
-        }
-        break direction=v
         surface {
             type "git"
         }

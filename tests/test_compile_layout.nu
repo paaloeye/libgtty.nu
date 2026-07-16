@@ -88,8 +88,8 @@ def "test compile_layout with basic fixture" [] {
 }
 
 @test
-def "test compile_layout with horizontal split" [] {
-    let kdl_path = ($test_dir | path join "fixtures" "workspace_split_h.kdl" | path expand)
+def "test compile_layout with horizontal break" [] {
+    let kdl_path = ($test_dir | path join "fixtures" "workspace_horizontal_break.kdl" | path expand)
 
     let applescript = (compile_layout
         $kdl_path
@@ -107,8 +107,8 @@ def "test compile_layout with horizontal split" [] {
 }
 
 @test
-def "test compile_layout with vertical split" [] {
-    let kdl_path = ($test_dir | path join "fixtures" "workspace_split_v.kdl" | path expand)
+def "test compile_layout with vertical break" [] {
+    let kdl_path = ($test_dir | path join "fixtures" "workspace_break_v.kdl" | path expand)
 
     let applescript = (compile_layout
         $kdl_path

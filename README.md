@@ -1,5 +1,11 @@
 # libgtty.nu
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/open_graph_card_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/open_graph_card_light.png">
+  <img alt="libgtty.nu" src="docs/media/open_graph_card_dark.png">
+</picture>
+
 [Nushell](https://www.nushell.sh/) module designed to manage and orchestrate [Ghostty](https://ghostty.org/)
 workspace surface layouts and pane interactions via the native [Ghostty AppleScript API](https://ghostty.org/docs/features/applescript).
 
@@ -28,30 +34,25 @@ workspace surface layouts and pane interactions via the native [Ghostty AppleScr
 
 ## Installation & Setup
 
-### 1. Compile Swift Broadcast Engine
-
-The low-latency broadcast engine requires compilation before use:
+> [!NOTE]
+> The low-latency broadcast engine requires compilation before use
 
 ```bash
 cd surface/broadcast
 swift build -c release
 ```
 
-This compiles the executable binary `gtty-surface-broadcast` inside `surface/broadcast/.build/release/`.
-
-### 2. Loading the Module
+This compiles the executable binary `gtty-surface-broadcast` inside `surface/broadcast/.build/release/`
 
 Add the following to your `config.nu`:
 
 ```nushell
-use /path/to/libgtty
+use /path/to/libgtty.nu
 ```
 
 ---
 
-## Commands
-
-### `gtty surface siblings`
+## `gtty surface siblings`
 
 Perform a one-shot or looping action on a sibling pane by relative offset.
 
@@ -67,7 +68,7 @@ gtty surface siblings --offset <offset> --action <action> [options]
 | `--max`      | `1984`     | Maximum command sends (`auto-accept` action only)          |
 | `--interval` | `5sec`     | Duration between command sends (`auto-accept` action only) |
 
-#### Available Actions
+### Available Actions
 
 - **`kill`**: Send a signal to all processes attached to the target pane's TTY.
   ```nushell
@@ -94,7 +95,7 @@ https://github.com/user-attachments/assets/5e6c77cb-6067-4325-9ca6-250761755a11
 
 ---
 
-### `gtty enter`
+## `gtty enter`
 
 Builds a structured multi-surface workspace layout in the current tab.
 The layout is dynamically configured from a local `.workspace.kdl` or `.workspace.default.kdl`
@@ -135,14 +136,15 @@ The AI binary is resolved from the environment:
 | `pi`     | `$env.PI`              | `pi`           |
 
 > [!NOTE]
-> The workspace layout launches the command configured in `$env.EDITOR` inside terminal 1 and terminal 3. If `$env.EDITOR` is not defined, it defaults to [`nnn`](https://github.com/jarun/nnn) (the terminal file manager).
+> The workspace layout launches the command configured in `$env.EDITOR` and `$env.NNN` inside terminal 1 and terminal 3.
+> If `$env.NNN` is not defined, it defaults to [`nnn`](https://github.com/jarun/nnn)
 
 > [!NOTE]
-> The AI command is typed into terminal 2 but **not automatically sent**.
+> The AI command is typed into terminal 2 but **not automatically sent**
 
 ---
 
-### `gtty leave`
+## `gtty leave`
 
 Closes the sibling panes created by `gtty enter`. This command requires a multi-pane workspace in the current tab. The
 tab itself remains open.
@@ -155,13 +157,9 @@ gtty leave [--force]
 | :-------- | :--------------------------------------- |
 | `--force` | Skip the interactive confirmation prompt |
 
-> [!TIP]
-> If the focused pane is currently zoomed (`cmd+shift+enter`), it will be automatically unzoomed before closing siblings
-> so that all panes remain accessible via AppleScript.
-
 ---
 
-### `gtty surface broadcast`
+## `gtty surface broadcast`
 
 Broadcast keyboard input in real-time to one or more sibling Ghostty surfaces.
 
@@ -174,12 +172,12 @@ gtty surface broadcast --offset <offset> [--engine <engine>]
 | `--offset` | _Required_ | Relative surface offset(s) (e.g. `+1`, `-1`, `-2..+1`) |
 | `--engine` | `swift`    | The underlying execution engine (`swift` or `nu`)      |
 
-#### Broadcast Engines
+### Broadcast Engines
 
-- **`swift` (Default)**: High-performance, compiled binary written in Swift. It enters terminal raw mode, parses ANSI escape
-  sequences into structured key events, and uses high-speed NSAppleScript events to type into target panes. Highly
-  recommended for complex/fast typing.
-- **`nu`**: A pure Nushell fallback implementation using Nushell's native `input listen` loop.
+- **`swift` (Default)**: Low-latency, compiled binary written in Swift. It enters terminal raw mode, user's input into tructured key events,
+  and uses high-speed [NSAppleScript](https://developer.apple.com/documentation/foundation/nsapplescript) events to type into target panes. Highly
+  recommended for complex/fast typing
+- **`nu`**: A pure Nushell fallback implementation using Nushell's native `input listen` loop
 
 ---
 
@@ -199,20 +197,20 @@ A workspace layout configuration uses a structured `workspace` block containing 
 
 #### Layout Nodes
 
-- **`workspace` (Root)**: Represents the top-level container of the tab.
-- **`box`**: Group of surfaces or nested splits layout container. Supports an optional `direction` attribute (`h` for horizontal or `v` for vertical, defaulting to `h`).
-- **`split direction=<h|v>`**: Splits the current pane container or box in the specified direction.
-- **`break direction=<h|v>`**: Splits within a layout box block.
-- **`surface`**: Individual terminal pane representing a process or command.
+- **`workspace` (Root)**: Represents the top-level container of the tab
+- **`box`**: Group of surfaces or nested splits layout container
+- **`break direction=<h|v>`**: Splits within a layout box block
+- **`surface`**: Individual terminal pane representing a process or command
 
 #### Surface Properties
 
 Inside a `surface` block, you can configure the target pane details:
 
-- **`type`**: The role or predefined application command of the pane (`editor`, `fs` for file manager, `ai`, or `git`).
-- **`command`**: Execute a custom shell command instead of predefined application types (e.g. `command "htop -d 10"`).
-- **`argv`**: Arguments to pass to the predefined application (supported for `editor` and `fs` types).
-- **`start_suspended`**: A boolean flag (`true`/`false`). If set to `true`, the layout compiler prevents sending the **Enter** key automatically to the target pane, keeping the command typed but unexecuted.
+- **`type`**: The role or predefined application command of the pane (`editor`, `fs` for file manager, `ai`, or `git`)
+- **`command`**: Execute a custom shell command instead of predefined application types (e.g. `command "htop -d 10"`)
+- **`argv`**: Arguments to pass to the predefined application (supported for `editor` and `fs` types)
+- **`start_suspended`**: A boolean flag (`true`/`false`). If set to `true`, the layout compiler prevents sending the **Enter** key automatically to the target pane,
+  keeping the command typed but unexecuted
 
 ---
 
@@ -222,7 +220,7 @@ Below is a typical multi-pane workspace layout configuration utilising horizonta
 
 ```kdl
 workspace {
-    box direction=h {
+    box {
         surface {
             type "editor"
             argv "README.md"
@@ -235,7 +233,7 @@ workspace {
         }
     }
 
-    split direction=h
+    break direction=h
 
     box {
         surface {
@@ -249,7 +247,7 @@ workspace {
             type "fs"
         }
 
-        split direction=v
+        break direction=v
 
         surface {
             type "git"

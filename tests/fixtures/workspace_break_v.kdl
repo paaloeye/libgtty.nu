@@ -6,7 +6,7 @@ workspace {
             type "editor"
         }
     }
-    split direction=h
+    break direction=h
     box {
         surface {
             type "git"

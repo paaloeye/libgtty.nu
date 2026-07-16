@@ -1,7 +1,7 @@
 // Ref: https://kdl.dev/
 
 workspace {
-    box direction=h {
+    box {
         surface {
             type "editor"
         }

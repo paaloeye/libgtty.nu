@@ -10,7 +10,7 @@ workspace {
     // - cmd-d
     // - cmd-d
 
-    box direction=h {
+    box {
         surface {
             type "editor"
             argv "README.md"
@@ -23,7 +23,7 @@ workspace {
         }
     }
 
-    split direction=h
+    break direction=h
 
     box {
         surface {
@@ -37,7 +37,7 @@ workspace {
             type "fs"
         }
 
-        split direction=v
+        break direction=v
 
         surface {
             type "git"
