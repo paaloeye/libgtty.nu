@@ -22,10 +22,8 @@ export def main [
     ensure_nu_version
 
     let bundle_id  = (ghostty_bundle_id)
-    let pane_count = (^osascript -e $"
-        tell application id \"($bundle_id)\"
-            return count terminals of selected tab of front window
-        end tell" | str trim | into int)
+    let info       = (my_index $bundle_id)
+    let pane_count = $info.count
 
     if $pane_count > 1 {
         error make { msg: $"Tab already has ($pane_count) panes — workspace must start from a single pane" }

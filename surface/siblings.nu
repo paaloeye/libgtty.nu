@@ -18,6 +18,7 @@ export def main [
     --max: int = 1984                      # maximum sends (auto-accept only)
     --interval: duration = 5sec            # interval between sends (auto-accept only)
     --keep-alive                           # prevent idle sleep while running (auto-accept only; display may dim)
+    --no-tint                              # disable tinting/flashing of target pane(s)
 ] {
     ensure_nu_version
 
@@ -39,13 +40,13 @@ export def main [
     let opts      = (parse_args $args)
 
     match $action {
-        "kill"        => { $targets | each { |t| do_kill $t $opts }; null }
+        "kill"        => { $targets | each { |t| do_kill $t $opts $no_tint }; null }
         "auto-accept" => {
             let run = {
                 if ($targets | length) == 1 {
-                    do_auto_accept $bundle_id ($targets | first) $max $interval
+                    do_auto_accept $bundle_id ($targets | first) $max $interval $no_tint
                 } else {
-                    $targets | par-each { |t| do_auto_accept $bundle_id $t $max $interval }
+                    $targets | par-each { |t| do_auto_accept $bundle_id $t $max $interval $no_tint }
                     null
                 }
             }
@@ -57,7 +58,7 @@ export def main [
                 do $run
             }
         }
-        "focus"       => { $targets | each { |t| do_focus $bundle_id $t }; null }
+        "focus"       => { $targets | each { |t| do_focus $bundle_id $t $no_tint }; null }
         _             => { error make { msg: $"Unknown action '($action)'. Valid: kill, auto-accept, focus" } }
     }
 }
@@ -77,17 +78,21 @@ def parse_args [raw: string] {
     $out
 }
 
-def do_kill [target: record, opts: record] {
+def do_kill [target: record, opts: record, no_tint: bool = false] {
     let tty_base = ($target.tty | path basename)
     let signame  = ($opts.signal | str uppercase)
 
-    tint $target.tty $TINT_DIM
-    print $"Pane ($target.index) tinted, signal ($signame) pending"
+    if not $no_tint {
+        tint $target.tty $TINT_DIM
+        print $"Pane ($target.index) tinted, signal ($signame) pending"
+    } else {
+        print $"Pane ($target.index), signal ($signame) pending"
+    }
 
     if $opts.confirm {
         let answer = (input $"Send ($signame) to pane ($target.index), TTY ($tty_base)? [yes/no]: " | str trim | str lowercase)
         if $answer != "yes" {
-            tint $target.tty ""
+            if not $no_tint { tint $target.tty "" }
             print "Aborted."
             return
         }
@@ -95,7 +100,7 @@ def do_kill [target: record, opts: record] {
 
     let pids = (^ps -t $tty_base -o pid= | lines | str trim | where { not ($in | is-empty) })
     if ($pids | is-empty) {
-        tint $target.tty ""
+        if not $no_tint { tint $target.tty "" }
         print $"No processes found on TTY ($tty_base)"
         return
     }
@@ -103,15 +108,19 @@ def do_kill [target: record, opts: record] {
     for pid in $pids {
         try { ^kill $"-($signame)" ($pid | into int) } catch { }
     }
-    tint $target.tty ""
+    if not $no_tint { tint $target.tty "" }
     print $"Sent ($signame) to ($pids | length) processes on TTY ($tty_base)."
 }
 
-def do_auto_accept [bundle_id: string, target: record, max: int, interval: duration] {
+def do_auto_accept [bundle_id: string, target: record, max: int, interval: duration, no_tint: bool = false] {
     let tag = $"[pane ($target.index)]"
     print $"($tag) Target: Pane=($target.index) max=($max) interval=($interval)"
-    tint $target.tty $TINT_DIM
-    print $"($tag) Armed \(pane tinted\). Ctrl+C to stop."
+    if not $no_tint {
+        tint $target.tty $TINT_DIM
+        print $"($tag) Armed \(pane tinted\). Ctrl+C to stop."
+    } else {
+        print $"($tag) Armed. Ctrl+C to stop."
+    }
 
     mut count = 0
     try {
@@ -119,24 +128,26 @@ def do_auto_accept [bundle_id: string, target: record, max: int, interval: durat
             sleep $interval
             $count = $count + 1
             print $"($tag) [($count)/($max)] Accepting"
-            tint $target.tty $TINT_FLASH
-            sleep 300ms
-            tint $target.tty $TINT_DIM
-            send_enter $bundle_id $target.index $target.tab
+            if not $no_tint {
+                tint $target.tty $TINT_FLASH
+                sleep 300ms
+                tint $target.tty $TINT_DIM
+            }
+            try {
+                send_enter $bundle_id $target
+            } catch { }
         }
-        tint $target.tty ""
+        if not $no_tint { tint $target.tty "" }
         print $"($tag) Done. Sent ($count)/($max)."
     } catch {
-        tint $target.tty ""
+        if not $no_tint { tint $target.tty "" }
         print $"($tag) Disarmed."
     }
 }
 
-def do_focus [bundle_id: string, target: record] {
-    ^osascript -e $"
-        tell application id \"($bundle_id)\"
-            focus terminal ($target.index) of selected tab of front window
-        end tell"
-
-    flash $target.tty
+def do_focus [bundle_id: string, target: record, no_tint: bool = false] {
+    focus $bundle_id $target
+    if not $no_tint {
+        flash $target.tty
+    }
 }

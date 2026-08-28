@@ -29,3 +29,28 @@ def "ghostty_bundle_id returns safe fallback or parent identifier" [] {
     assert (($id | str length) > 0)
     assert ($id | str starts-with "com.")
 }
+
+@test
+def "current_tty returns env TTY when set" [] {
+    with-env { TTY: "/dev/ttys999" } {
+        assert equal (current_tty) "/dev/ttys999"
+    }
+}
+
+@test
+def "current_tty returns a string device or empty" [] {
+    let tty_val = (current_tty)
+    assert (($tty_val | describe) == "string")
+}
+
+@test
+def "my_index returns expected record structure" [] {
+    let id = (ghostty_bundle_id)
+    let info = (my_index $id)
+    assert (($info.index | describe) == "int")
+    assert (($info.count | describe) == "int")
+    assert (($info.tab_idx | describe) == "int")
+    assert (($info.win_id | describe) == "string")
+    assert (($info.tab_id | describe) == "string")
+    assert (($info.term_id | describe) == "string")
+}

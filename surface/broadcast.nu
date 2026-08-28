@@ -52,30 +52,30 @@ export def main [
             let ascii = ($key.code | encode utf8 | first | into int) <= 127
 
             match [$key.key_type $key.code $ctrl $ascii] {
-                # exit
-                ["char" "c" true _] | ["char" "d" true] => { break }
+                # exit on Ctrl+C or Ctrl+D
+                ["char" ("c" | "d") true _] => { break }
 
                 # non-ASCII chars (e.g. æ, ø, å) have no Ghostty key name; send as text directly
                 ["char" _ _ false]  => {
-                    for t in $targets { send_input $bundle_id $t.index $t.tab $key.code }
+                    for t in $targets { try { send_input $bundle_id $t $key.code } }
                 }
 
                 # send via `send_char`
                 ["char" _ _ _]  => {
-                    for t in $targets { send_char $bundle_id $t.index $t.tab $key.code $key.modifiers }
+                    for t in $targets { try { send_char $bundle_id $t $key.code $key.modifiers } }
                 }
 
                 # Workaround: escape steals focus via AppKit cancelOperation: responder chain.
                 ["other" "esc" _ _] => {
-                    for t in $targets { send_other $bundle_id $t.index $t.tab $key.code $key.modifiers }
+                    for t in $targets { try { send_other $bundle_id $t $key.code $key.modifiers } }
 
                     # Restore focus
-                    focus $bundle_id $source.index
+                    try { focus $bundle_id $source }
                 }
 
                 # send via `send_other`
                 ["other" _ _ _] => {
-                    for t in $targets { send_other $bundle_id $t.index $t.tab $key.code $key.modifiers }
+                    for t in $targets { try { send_other $bundle_id $t $key.code $key.modifiers } }
                 }
                 _ => {}
             }

@@ -6,7 +6,7 @@
 #  libgtty.nu
 #
 
-use lib.nu [ ghostty_bundle_id ]
+use lib.nu [ ghostty_bundle_id current_tty ]
 
 const options = {
     case_sensitive: false,
@@ -60,32 +60,84 @@ def panes_cache_set [raw: string] {
     { raw: $raw, cached_at: (date now) } | stor insert --table-name $SURFACES_TABLE
 }
 
-# Completions for --pane on `gtty siblings` — live offsets relative to the focused pane
+# Completions for `--pane` on `gtty siblings`. live offsets relative to the focused pane.
 export def _panes [] {
     let raw = panes_cache_get
 
     let raw = if $raw != null { $raw } else {
         let bundle_id = (ghostty_bundle_id)
+        let my_tty = (current_tty)
         let fetched = try {
             ^osascript -e ($"tell application id \"($bundle_id)\"" + '
-                    set n   to count terminals of selected tab of front window
-                    set fid to id of focused terminal of selected tab of front window
+                    set my_tty to "' + $my_tty + '"
+                    set found_win to ""
+                    set found_tab to ""
+                    set my_term_id to ""
+
+                    if my_tty is not "" then
+                        set winList to every window
+                        repeat with w in winList
+                            set tabList to every tab of w
+                            repeat with tb in tabList
+                                set trmList to every terminal of tb
+                                repeat with i from 1 to (count of trmList)
+                                    set trm to item i of trmList
+                                    set pane_tty to ""
+                                    try
+                                        set pane_tty to tty of trm
+                                    end try
+                                    if pane_tty is my_tty then
+                                        set found_win to id of w
+                                        set found_tab to id of tb
+                                        set my_term_id to id of trm
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if my_term_id is not "" then exit repeat
+                            end repeat
+                            if my_term_id is not "" then exit repeat
+                        end repeat
+                    end if
+
                     set out to ""
-                    repeat with i from 1 to n
-                        set t to terminal i of selected tab of front window
-                        if id of t is fid then
-                            set out to out & "ME:" & (i as text) & "\n"
-                        else
-                            set pane_tty to ""
-                            try
-                                set pane_tty to tty of t
-                            end try
-                            set out to out & (i as text) & "|" & pane_tty & "|" & (name of t) & "\n"
-                        end if
-                    end repeat
+                    if my_term_id is not "" then
+                        set w to first window whose id is found_win
+                        set tb to first tab of w whose id is found_tab
+                        set trmList to every terminal of tb
+                        repeat with i from 1 to (count of trmList)
+                            set trm to item i of trmList
+                            if id of trm is my_term_id then
+                                set out to out & "ME:" & (i as text) & "\n"
+                            else
+                                set pane_tty to ""
+                                try
+                                    set pane_tty to tty of trm
+                                end try
+                                set out to out & (i as text) & "|" & pane_tty & "|" & (name of trm) & "\n"
+                            end if
+                        end repeat
+                    else
+                        try
+                            set n   to count terminals of selected tab of front window
+                            set fid to id of focused terminal of selected tab of front window
+                            repeat with i from 1 to n
+                                set t to terminal i of selected tab of front window
+                                if id of t is fid then
+                                    set out to out & "ME:" & (i as text) & "\n"
+                                else
+                                    set pane_tty to ""
+                                    try
+                                        set pane_tty to tty of t
+                                    end try
+                                    set out to out & (i as text) & "|" & pane_tty & "|" & (name of t) & "\n"
+                                end if
+                            end repeat
+                        end try
+                    end if
                     return out
                 end tell') | str trim
         } catch { "" }
+
         if not ($fetched | is-empty) { panes_cache_set $fetched }
         $fetched
     }

@@ -72,9 +72,9 @@ private let charToGhostty: [Character: (name: String, shift: Bool)] = [
 // MARK: - Target Script
 
 // One compiled NSAppleScript per target pane.
-// The bundle ID, terminal index, and tab index are baked in as literals so the
+// The bundle ID and terminal ID are baked in as literals so the
 // compiler never sees them as variables — avoiding tokenisation clashes with
-// AppleScript keywords (e.g. "bundleId" → "bundle id", "tab tabIdx" → property ref).
+// AppleScript keywords.
 // Only the key name, modifiers, and text vary per call and are safe string params.
 final class TargetScript: @unchecked Sendable {
 
@@ -86,23 +86,26 @@ final class TargetScript: @unchecked Sendable {
     private static let hname: AEKeyword = 0x736E_616D  // 'snam'
     private static let dobj: AEKeyword = 0x2D2D_2D2D  // '----'
 
-    init(bundleId: String, termIndex: Int, tabIndex: Int) throws {
+    init(bundleId: String, termId: String) throws {
         let src = """
             on do_send_key(keyName)
                 tell application id "\(bundleId)"
-                    send key keyName to terminal \(termIndex) of tab \(tabIndex) of front window
+                    set t to first terminal whose id is "\(termId)"
+                    send key keyName to t
                 end tell
             end do_send_key
 
             on do_send_key_mods(keyName, modsStr)
                 tell application id "\(bundleId)"
-                    send key keyName modifiers modsStr to terminal \(termIndex) of tab \(tabIndex) of front window
+                    set t to first terminal whose id is "\(termId)"
+                    send key keyName modifiers modsStr to t
                 end tell
             end do_send_key_mods
 
             on do_input_text(theText)
                 tell application id "\(bundleId)"
-                    input text theText to terminal \(termIndex) of tab \(tabIndex) of front window
+                    set t to first terminal whose id is "\(termId)"
+                    input text theText to t
                 end tell
             end do_input_text
             """
@@ -155,46 +158,119 @@ private func runAS(_ src: String) throws -> NSAppleEventDescriptor {
     return result
 }
 
-private func queryMyIndex(bundleId: String) throws -> (index: Int, count: Int) {
+private struct SurfaceContext {
+    let winId: String
+    let tabId: String
+    let myIdx: Int
+    let myTermId: String
+    let count: Int
+}
+
+private func queryCurrentContext(bundleId: String) throws -> SurfaceContext {
+    let myTty = ttyname(STDIN_FILENO).map { String(cString: $0) } ?? ""
     let result = try runAS(
         """
         tell application id "\(bundleId)"
-            set n to count terminals of selected tab of front window
-            set fid to id of focused terminal of selected tab of front window
-            repeat with i from 1 to n
-                if id of terminal i of selected tab of front window is fid then
-                    return (i as text) & ":" & (n as text)
-                end if
-            end repeat
+            set my_tty to "\(myTty)"
+            set found_win to ""
+            set found_tab to ""
+            set my_term_idx to 0
+            set my_term_id to ""
+            set term_count to 0
+
+            if my_tty is not "" then
+                set winList to every window
+                repeat with w in winList
+                    set tabList to every tab of w
+                    repeat with tb in tabList
+                        set trmList to every terminal of tb
+                        repeat with i from 1 to (count of trmList)
+                            set trm to item i of trmList
+                            set pane_tty to ""
+                            try
+                                set pane_tty to tty of trm
+                            end try
+                            if pane_tty is my_tty then
+                                set found_win to id of w
+                                set found_tab to id of tb
+                                set my_term_idx to i
+                                set my_term_id to id of trm
+                                set term_count to count of trmList
+                                exit repeat
+                            end if
+                        end repeat
+                        if my_term_id is not "" then exit repeat
+                    end repeat
+                    if my_term_id is not "" then exit repeat
+                end repeat
+            end if
+
+            if my_term_id is "" then
+                try
+                    set found_win to id of front window
+                    set found_tab to id of selected tab of front window
+                    set my_term_id to id of focused terminal of selected tab of front window
+                    set term_count to count of terminals of selected tab of front window
+                    repeat with i from 1 to term_count
+                        if id of terminal i of selected tab of front window is my_term_id then
+                            set my_term_idx to i
+                            exit repeat
+                        end if
+                    end repeat
+                end try
+            end if
+
+            return found_win & ":" & found_tab & ":" & (my_term_idx as text) & ":" & my_term_id & ":" & (term_count as text)
         end tell
         """)
-    let parts = (result.stringValue ?? "").split(separator: ":").map(String.init)
-    guard parts.count == 2, let idx = Int(parts[0]), let cnt = Int(parts[1]) else {
-        throw BroadcastError.unexpectedResponse("myIndex", result.stringValue ?? "nil")
+    let parts = (result.stringValue ?? "").split(separator: ":", omittingEmptySubsequences: false).map(String.init)
+    guard parts.count >= 5, let idx = Int(parts[2]), let cnt = Int(parts[4]) else {
+        throw BroadcastError.unexpectedResponse("currentContext", result.stringValue ?? "nil")
     }
-    return (idx, cnt)
+    return SurfaceContext(winId: parts[0], tabId: parts[1], myIdx: idx, myTermId: parts[3], count: cnt)
 }
 
-private func queryTabIndex(bundleId: String) throws -> Int {
-    let result = try runAS(
-        """
-        tell application id "\(bundleId)"
-            return index of selected tab of front window as text
-        end tell
-        """)
-    guard let s = result.stringValue, let n = Int(s) else {
-        throw BroadcastError.unexpectedResponse("tabIndex", result.stringValue ?? "nil")
+private func queryTermId(bundleId: String, context: SurfaceContext, targetIdx: Int) throws -> String {
+    let result =
+        if !context.winId.isEmpty && !context.tabId.isEmpty {
+            try runAS(
+                """
+                tell application id "\(bundleId)"
+                    set w to first window whose id is "\(context.winId)"
+                    set tb to first tab of w whose id is "\(context.tabId)"
+                    return id of terminal \(targetIdx) of tb
+                end tell
+                """)
+        } else {
+            try runAS(
+                """
+                tell application id "\(bundleId)"
+                    return id of terminal \(targetIdx) of selected tab of front window
+                end tell
+                """)
+        }
+    guard let s = result.stringValue, !s.isEmpty else {
+        throw BroadcastError.unexpectedResponse("termId", result.stringValue ?? "nil")
     }
-    return n
+    return s
 }
 
-private func focusSurface(bundleId: String, surfaceIndex: Int) {
-    _ = try? runAS(
-        """
-        tell application id "\(bundleId)"
-            focus terminal \(surfaceIndex) of selected tab of front window
-        end tell
-        """)
+private func focusSurface(bundleId: String, termId: String) {
+    if !termId.isEmpty {
+        _ = try? runAS(
+            """
+            tell application id "\(bundleId)"
+                focus (first terminal whose id is "\(termId)")
+            end tell
+            """)
+    } else {
+        _ = try? runAS(
+            """
+            tell application id "\(bundleId)"
+                focus terminal 1 of selected tab of front window
+            end tell
+            """)
+    }
 }
 
 // MARK: - Raw Terminal Input
@@ -345,15 +421,15 @@ struct Broadcast {
             throw BroadcastError.noBundleId
         }
 
-        let (myIdx, paneCount) = try queryMyIndex(bundleId: bundleId)
-        let tab = try queryTabIndex(bundleId: bundleId)
+        let ctx = try queryCurrentContext(bundleId: bundleId)
 
         let targets: [TargetScript] = try parseOffsets(offsetArg).map { o in
-            let idx = myIdx + o
-            guard idx >= 1 && idx <= paneCount else {
-                throw BroadcastError.offsetOutOfRange(o, myIdx, paneCount)
+            let idx = ctx.myIdx + o
+            guard idx >= 1 && idx <= ctx.count else {
+                throw BroadcastError.offsetOutOfRange(o, ctx.myIdx, ctx.count)
             }
-            return try TargetScript(bundleId: bundleId, termIndex: idx, tabIndex: tab)
+            let targetTermId = try queryTermId(bundleId: bundleId, context: ctx, targetIdx: idx)
+            return try TargetScript(bundleId: bundleId, termId: targetTermId)
         }
 
         print("Broadcasting to \(targets.count) pane(s). Ctrl+C / Ctrl+D to stop.")
@@ -375,7 +451,7 @@ struct Broadcast {
 
             case .escape:
                 for t in targets { t.sendKey("escape") }
-                focusSurface(bundleId: bundleId, surfaceIndex: myIdx)
+                focusSurface(bundleId: bundleId, termId: ctx.myTermId)
 
             case .special(let name):
                 if name == "backtab" {
