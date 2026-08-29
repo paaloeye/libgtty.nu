@@ -83,7 +83,7 @@ def do_kill [target: record, opts: record, no_tint: bool = false] {
     let signame  = ($opts.signal | str uppercase)
 
     if not $no_tint {
-        tint $target.tty $TINT_DIM
+        tint $target.tty
         print $"Pane ($target.index) tinted, signal ($signame) pending"
     } else {
         print $"Pane ($target.index), signal ($signame) pending"
@@ -114,9 +114,10 @@ def do_kill [target: record, opts: record, no_tint: bool = false] {
 
 def do_auto_accept [bundle_id: string, target: record, max: int, interval: duration, no_tint: bool = false] {
     let tag = $"[pane ($target.index)]"
+    let palette = if not $no_tint { current_tint_palette } else { null }
     print $"($tag) Target: Pane=($target.index) max=($max) interval=($interval)"
     if not $no_tint {
-        tint $target.tty $TINT_DIM
+        tint $target.tty $palette.dim
         print $"($tag) Armed \(pane tinted\). Ctrl+C to stop."
     } else {
         print $"($tag) Armed. Ctrl+C to stop."
@@ -129,9 +130,9 @@ def do_auto_accept [bundle_id: string, target: record, max: int, interval: durat
             $count = $count + 1
             print $"($tag) [($count)/($max)] Accepting"
             if not $no_tint {
-                tint $target.tty $TINT_FLASH
+                tint $target.tty $palette.flash
                 sleep 300ms
-                tint $target.tty $TINT_DIM
+                tint $target.tty $palette.dim
             }
             try {
                 send_enter $bundle_id $target
