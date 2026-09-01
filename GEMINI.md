@@ -22,6 +22,7 @@ As a Gemini agent (via Antigravity/`agy`), note the following integration points
 > linter failures or break pre-commit hooks.
 
 - ALWAYS read [GOTCHA.md](./GOTCHA.md) first
+- ALWAYS read `@CLAUDE.*.fragment.md` first
 - PREFER British English over American English spelling and grammar except in **inline code** sections
 - USE Markdown banners ([see below](#a-tour-of-banners))
 - Files and Directories MUST NOT have **dashes** in names/paths (use **underscore** instead)
@@ -68,18 +69,21 @@ BREAKING CHANGE: <description if applicable>
 🤖 Generated with [$(ai.nu agent get-caller-identity --key .name)]($(ai.nu agent get-caller-identity --key .url))
 
 Co-Authored-By: $(ai.nu model --key .name) <gemini-code-assist@google.com>
+Co-Authored-By: $(ai.nu model --key .effort)
 Co-Authored-By: $(ai.nu agent get-caller-identity)
+Agent-Session: $(ai.nu agent get-caller-identity --key .session)
 Signed-Off-By: Paal Øye-Strømme <paal.o.eye@gmail.com>
 ```
 
 > [!IMPORTANT]
-> The `$(ai.nu agent get-caller-identity)` footer line requires shell substitution. Use an **unquoted** heredoc (`EOF`, not `'EOF'`) so the shell expands it:
+> The `$(ai.nu agent get-caller-identity)` and `$(ai.nu model ...)` footer lines require shell substitution. Use an **unquoted** heredoc (`EOF`, not `'EOF'`) so the shell expands it:
 >
 > ```bash
 > git commit -m "$(cat <<EOF
 > <message>
 >
 > Co-Authored-By: $(ai.nu agent get-caller-identity)
+> Agent-Session: $(ai.nu agent get-caller-identity --key .session)
 > EOF
 > )"
 > ```

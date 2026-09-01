@@ -11,20 +11,147 @@ export use ../lib.nu [ ghostty_bundle_id my_index ensure_nu_version ]
 export const TINT_DIM   = "#1c1214"
 export const TINT_FLASH = "#2a1015"
 
-export def tint [tty_dev: string, colour: string = $TINT_DIM] {
-    if ($tty_dev | is-empty) { return }
+const TINT_TABLE = "GTTY_TINT_CACHE"
+const TINT_TTL   = 300sec
+
+def clamp_byte [val: int] {
+    if $val > 255 { 255 } else if $val < 0 { 0 } else { $val }
+}
+
+def int_to_hex [val: int] {
+    let clamped = (clamp_byte $val)
+    let raw = ($clamped | format number | get lowerhex | str replace "0x" "")
+    if ($raw | str length) == 1 { $"0($raw)" } else { $raw }
+}
+
+def hex_to_int [hex: string] {
+    $"0x($hex)" | into int
+}
+
+def parse_osc11_rgb [raw: string] {
+    let match = ($raw | parse -r "rgb:(?<r>[0-9a-fA-F]+)/(?<g>[0-9a-fA-F]+)/(?<b>[0-9a-fA-F]+)" | get 0?)
+    if $match == null { return null }
+    let r_hex = ($match.r | str substring 0..1)
+    let g_hex = ($match.g | str substring 0..1)
+    let b_hex = ($match.b | str substring 0..1)
+    $"#($r_hex)($g_hex)($b_hex)" | str lowercase
+}
+
+def tint_cache_get [] {
     try {
-        if ($colour | is-empty) {
+        let row = (stor open | query db $"SELECT base_hex, cached_at FROM ($TINT_TABLE) LIMIT 1" | get 0?)
+        if $row == null { return null }
+        let age = (date now) - ($row.cached_at | into datetime)
+        if $age > $TINT_TTL { return null }
+        $row.base_hex
+    } catch { null }
+}
+
+def tint_cache_set [base_hex: string] {
+    try { stor delete --table-name $TINT_TABLE } catch { }
+    try { stor create --table-name $TINT_TABLE --columns { base_hex: str, cached_at: datetime } } catch { }
+    { base_hex: $base_hex, cached_at: (date now) } | stor insert --table-name $TINT_TABLE
+}
+
+# Query controlling terminal for background colour via OSC 11 with 5-minute cache
+export def sample_bg_colour [] {
+    let cached = (tint_cache_get)
+    if $cached != null { return $cached }
+
+    let sampled = try {
+        let raw = (^bash -c "
+            if [ -t 0 ] && [ -t 1 ] && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+                trap '' SIGTTIN SIGTTOU
+                old_stty=$(stty -g < /dev/tty 2>/dev/null) || exit 0
+                stty raw -echo min 0 time 1 < /dev/tty 2>/dev/null || exit 0
+                printf '\\e]11;?\\a' > /dev/tty 2>/dev/null
+                resp=$(dd bs=1 count=64 < /dev/tty 2>/dev/null)
+                stty \"$old_stty\" < /dev/tty 2>/dev/null
+                echo \"$resp\"
+            fi
+        " | str trim)
+        parse_osc11_rgb $raw
+    } catch { null }
+
+    let base = if $sampled != null { $sampled } else { $TINT_DIM }
+    tint_cache_set $base
+    $base
+}
+
+# Derive adaptive dim and flash colours from a base background colour
+export def derive_tint_palette [base_hex: string] {
+    let clean = ($base_hex | str trim | str replace -r "^#" "")
+    if ($clean | str length) != 6 {
+        return { dim: $TINT_DIM, flash: $TINT_FLASH }
+    }
+
+    let r = (hex_to_int ($clean | str substring 0..1))
+    let g = (hex_to_int ($clean | str substring 2..3))
+    let b = (hex_to_int ($clean | str substring 4..5))
+
+    # Perceived luminance (ITU-R BT.709)
+    let lum = ((0.2126 * $r) + (0.7152 * $g) + (0.0722 * $b))
+
+    # Dark theme: blend with subtle dark red glow
+    if $lum < 128.0 {
+        let r_dim = (($r * 0.8 + 28.0) | math round | into int)
+        let g_dim = (($g * 0.8) | math round | into int)
+        let b_dim = (($b * 0.8 + 4.0) | math round | into int)
+
+        let r_flash = (($r * 0.7 + 55.0) | math round | into int)
+        let g_flash = (($g * 0.7) | math round | into int)
+        let b_flash = (($b * 0.7 + 10.0) | math round | into int)
+
+        return {
+            dim: $"#(int_to_hex $r_dim)(int_to_hex $g_dim)(int_to_hex $b_dim)",
+            flash: $"#(int_to_hex $r_flash)(int_to_hex $g_flash)(int_to_hex $b_flash)",
+        }
+    }
+
+    # Light theme: shift toward soft rose/coral pastel
+    let r_dim = (($r * 0.98) | math round | into int)
+    let g_dim = (($g * 0.88) | math round | into int)
+    let b_dim = (($b * 0.88) | math round | into int)
+
+    let r_flash = (($r * 0.95) | math round | into int)
+    let g_flash = (($g * 0.75) | math round | into int)
+    let b_flash = (($b * 0.75) | math round | into int)
+
+    {
+        dim: $"#(int_to_hex $r_dim)(int_to_hex $g_dim)(int_to_hex $b_dim)",
+        flash: $"#(int_to_hex $r_flash)(int_to_hex $g_flash)(int_to_hex $b_flash)",
+    }
+}
+
+# Get current adaptive tint palette
+export def current_tint_palette [] {
+    derive_tint_palette (sample_bg_colour)
+}
+
+export def tint [tty_dev: string, colour?: string] {
+    if ($tty_dev | is-empty) { return }
+    let col = if $colour != null {
+        $colour
+    } else {
+        (current_tint_palette).dim
+    }
+    try {
+        if ($col | is-empty) or ($col == "reset") {
             ^bash -c $"printf '\\e]111\\a' > ($tty_dev)"
         } else {
-            ^bash -c $"printf '\\e]11;($colour)\\a' > ($tty_dev)"
+            ^bash -c $"printf '\\e]11;($col)\\a' > ($tty_dev)"
         }
     } catch { }
 }
 
-export def flash [tty_dev: string, duration: duration = 300ms] {
+export def flash [tty_dev: string, duration: duration = 300ms, colour?: string] {
     if ($tty_dev | is-empty) { return }
-    tint $tty_dev $TINT_FLASH
+    let flash_col = if $colour != null {
+        $colour
+    } else {
+        (current_tint_palette).flash
+    }
+    tint $tty_dev $flash_col
     sleep $duration
     tint $tty_dev ""
 }

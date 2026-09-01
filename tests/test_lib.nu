@@ -54,3 +54,40 @@ def "my_index returns expected record structure" [] {
     assert (($info.tab_id | describe) == "string")
     assert (($info.term_id | describe) == "string")
 }
+
+use ../surface/lib.nu [ derive_tint_palette current_tint_palette sample_bg_colour ]
+
+@test
+def "derive_tint_palette returns dark tint for dark background" [] {
+    let palette = (derive_tint_palette "#1c1214")
+    assert equal ($palette.dim | describe) "string"
+    assert equal ($palette.flash | describe) "string"
+    assert ($palette.dim | str starts-with "#")
+    assert ($palette.flash | str starts-with "#")
+}
+
+@test
+def "derive_tint_palette returns light pastel tint for light background" [] {
+    let palette = (derive_tint_palette "#ffffff")
+    assert equal ($palette.dim | describe) "string"
+    assert equal ($palette.flash | describe) "string"
+    assert ($palette.dim | str starts-with "#")
+    assert ($palette.flash | str starts-with "#")
+    # For white, green/blue should be lower than red (warm rose shift)
+    assert equal $palette.dim "#fae0e0"
+    assert equal $palette.flash "#f2bfbf"
+}
+
+@test
+def "derive_tint_palette falls back on invalid hex" [] {
+    let palette = (derive_tint_palette "invalid")
+    assert equal $palette.dim "#1c1214"
+    assert equal $palette.flash "#2a1015"
+}
+
+@test
+def "current_tint_palette returns valid dim and flash hex strings" [] {
+    let palette = (current_tint_palette)
+    assert ($palette.dim | str starts-with "#")
+    assert ($palette.flash | str starts-with "#")
+}
