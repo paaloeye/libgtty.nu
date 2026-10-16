@@ -18,6 +18,7 @@ export def main [
     --file: string@_readme = ""    # file to open in $env.EDITOR (default: first existing README)
     --ai: string@_ai = "agy"       # AI to be used (default: agy)
     --ai-session: string = ""      # AI session ID to resume (default: nil)
+    --title: string = ""           # Tab title override (default: from workspace KDL or unchanged)
 ] {
     ensure_nu_version
 
@@ -77,7 +78,7 @@ export def main [
         }
     }
 
-    let applescript = (compile_layout $kdl_path $editor_cmd $fs_cmd $ai_cmd $cwd $resolved_file $bundle_id)
+    let applescript = (compile_layout $kdl_path $editor_cmd $fs_cmd $ai_cmd $cwd $resolved_file $bundle_id $title)
 
     ^osascript -e $applescript
 }
@@ -90,6 +91,7 @@ def compile_layout [
     cwd: string
     resolved_file: string
     bundle_id: string
+    title: string = ""
 ] {
     let kdl_content = (open --raw $kdl_path | str replace -a " true" " #true" | str replace -a " false" " #false")
     let parsed = ($kdl_content | from kdl)
@@ -108,11 +110,38 @@ def compile_layout [
         error make { msg: "No surfaces found in workspace KDL file" }
     }
 
+    let kdl_ws_title = if ($workspace.props?.title? | default "" | is-not-empty) {
+        $workspace.props.title
+    } else if (($workspace.args? | default [] | length) > 0) {
+        $workspace.args | get 0
+    } else if ($workspace.children != null) {
+        let title_nodes = ($workspace.children | where name == "title")
+        if ($title_nodes | is-not-empty) {
+            ($title_nodes | get 0 | get args? | default [] | get 0?) | default ""
+        } else {
+            ""
+        }
+    } else {
+        ""
+    }
+
+    let resolved_tab_title = if ($title | is-not-empty) { $title } else { $kdl_ws_title }
+
     mut lines = [
         $"tell application id \"($bundle_id)\""
         $"    set cwd to \"($cwd)\""
-        $"    set t0_0 to terminal 1 of selected tab of front window"
+        $"    set cur_tab to selected tab of front window"
     ]
+
+    if ($resolved_tab_title | is-not-empty) {
+        $lines = ($lines | append [
+            $"    try"
+            $"        set title override of cur_tab to \"($resolved_tab_title)\""
+            $"    end try"
+        ])
+    }
+
+    $lines = ($lines | append $"    set t0_0 to terminal 1 of cur_tab")
     mut terminal_vars = { "0_0": "t0_0" }
 
     let R = ($grid_rows | length)
@@ -169,6 +198,13 @@ def compile_layout [
             let surface = ($row_surfaces | get $c)
             let var_name = ($terminal_vars | get $"($r)_($c)")
 
+            mut s_title = if ($surface.props?.title? | default "" | is-not-empty) {
+                $surface.props.title
+            } else if (($surface.args? | default [] | length) > 0) {
+                $surface.args | get 0
+            } else {
+                ""
+            }
             mut s_type = ""
             mut s_cmd = ""
             mut s_argv = []
@@ -178,6 +214,11 @@ def compile_layout [
                 for attr in $surface.children {
                     let args = ($attr.args? | default [])
                     match $attr.name {
+                        "title" => {
+                            if ($args | length) > 0 {
+                                $s_title = ($args | get 0)
+                            }
+                        }
                         "type" => {
                             if ($args | length) > 0 {
                                 $s_type = ($args | get 0)
@@ -225,6 +266,14 @@ def compile_layout [
                 $cmd_str = "gitui"
             } else if not ($s_cmd | is-empty) {
                 $cmd_str = $s_cmd
+            }
+
+            if ($s_title | is-not-empty) {
+                $lines = ($lines | append [
+                    $"    try"
+                    $"        set title override of ($var_name) to \"($s_title)\""
+                    $"    end try"
+                ])
             }
 
             $lines = ($lines | append $"    input text \"($cmd_str)\" to ($var_name)")

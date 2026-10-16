@@ -102,7 +102,7 @@ The layout is dynamically configured from a local `.workspace.kdl` or `.workspac
 layout file (see [Workspace Layout Configuration](#workspace-layout-configuration) for customisation details).
 
 ```nushell
-gtty enter [target_dir] [--file <path>] [--ai <provider>] [--ai-session <id>]
+gtty enter [target_dir] [--file <path>] [--title <title>] [--ai <provider>] [--ai-session <id>]
 ```
 
 #### Default Visual Layout
@@ -123,6 +123,7 @@ gtty enter [target_dir] [--file <path>] [--ai <provider>] [--ai-session <id>]
 | :-------------- | :----------- | :----------------------------------------------------------------- |
 | `target_dir`    | Current Dir  | Target directory to enter and set as the initial working directory |
 | `--file`        | First README | File to open in the editor (defaults to the first existing README) |
+| `--title`       | `""`         | Tab title override (overrides layout file workspace title)         |
 | `--ai`          | `agy`        | AI provider to launch in t2 (`agy`, `claude`, `gemini`, or `pi`)   |
 | `--ai-session`  | `""`         | Session ID to resume with `--resume` (provider-agnostic)           |
 
@@ -150,12 +151,14 @@ Closes the sibling panes created by `gtty enter`. This command requires a multi-
 tab itself remains open.
 
 ```nushell
-gtty leave [--force]
+gtty leave [--force] [--title <title>] [--keep-title]
 ```
 
-| Flag      | Description                              |
-| :-------- | :--------------------------------------- |
-| `--force` | Skip the interactive confirmation prompt |
+| Flag           | Default | Description                                                             |
+| :------------- | :------ | :---------------------------------------------------------------------- |
+| `--force`      | `false` | Skip the interactive confirmation prompt                                |
+| `--title`      | `""`    | Tab title override to set after closing siblings (defaults to clearing) |
+| `--keep-title` | `false` | Preserve existing tab and terminal title overrides instead of clearing  |
 
 ---
 
@@ -197,7 +200,8 @@ A workspace layout configuration uses a structured `workspace` block containing 
 
 #### Layout Nodes
 
-- **`workspace` (Root)**: Represents the top-level container of the tab
+- **`workspace` (Root)**: Represents the top-level container of the tab.
+  Supports an optional `title` attribute or child node (e.g. `workspace title="my-project"` or `title "my-project"`) to set the tab title override
 - **`box`**: Group of surfaces or nested splits layout container
 - **`break direction=<h|v>`**: Splits within a layout box block
 - **`surface`**: Individual terminal pane representing a process or command
@@ -206,6 +210,7 @@ A workspace layout configuration uses a structured `workspace` block containing 
 
 Inside a `surface` block, you can configure the target pane details:
 
+- **`title`**: Custom terminal title override for the pane (e.g. `title "editor"` or `surface title="editor"`)
 - **`type`**: The role or predefined application command of the pane (`editor`, `fs` for file manager, `ai`, or `git`)
 - **`command`**: Execute a custom shell command instead of predefined application types (e.g. `command "htop -d 10"`)
 - **`argv`**: Arguments to pass to the predefined application (supported for `editor` and `fs` types)
@@ -220,8 +225,11 @@ Below is a typical multi-pane workspace layout configuration utilising horizonta
 
 ```kdl
 workspace {
+    title "my-workspace"
+
     box {
         surface {
+            title "editor"
             type "editor"
             argv "README.md"
         }
@@ -229,6 +237,7 @@ workspace {
         break direction=v
 
         surface {
+            title "files"
             type "fs"
         }
     }
@@ -237,6 +246,7 @@ workspace {
 
     box {
         surface {
+            title "ai"
             type "ai"
             start_suspended true
         }
@@ -244,12 +254,14 @@ workspace {
         break direction=v
 
         surface {
+            title "files"
             type "fs"
         }
 
         break direction=v
 
         surface {
+            title "git"
             type "git"
         }
     }

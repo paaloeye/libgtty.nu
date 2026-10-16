@@ -1,0 +1,15 @@
+workspace title="test-workspace" {
+    box {
+        surface title="main-editor" {
+            type "editor"
+            argv "README.md"
+        }
+
+        break direction=v
+
+        surface {
+            title "file-tree"
+            type "fs"
+        }
+    }
+}
