@@ -201,3 +201,59 @@ def "test compile_layout with fs argv" [] {
     assert ($applescript | str contains "input text \"nnn README.md\" to t0_0")
     assert ($applescript | str contains "send key \"enter\" to t0_0")
 }
+
+@test
+def "test compile_layout with titles fixture" [] {
+    let kdl_path = ($test_dir | path join "fixtures" "workspace_titles.kdl" | path expand)
+
+    let applescript = (compile_layout
+        $kdl_path
+        "nvim"
+        "nnn"
+        "ag"
+        "/tmp"
+        "README.md"
+        "com.mitchellh.ghostty"
+    )
+
+    assert ($applescript | str contains "set title override of cur_tab to \"test-workspace\"")
+    assert ($applescript | str contains "set title override of t0_0 to \"main-editor\"")
+    assert ($applescript | str contains "set title override of t0_1 to \"file-tree\"")
+}
+
+@test
+def "test compile_layout with explicit cli title override" [] {
+    let kdl_path = ($test_dir | path join "fixtures" "workspace_titles.kdl" | path expand)
+
+    let applescript = (compile_layout
+        $kdl_path
+        "nvim"
+        "nnn"
+        "ag"
+        "/tmp"
+        "README.md"
+        "com.mitchellh.ghostty"
+        "cli-custom-title"
+    )
+
+    assert ($applescript | str contains "set title override of cur_tab to \"cli-custom-title\"")
+    assert ($applescript | str contains "set title override of t0_0 to \"main-editor\"")
+    assert ($applescript | str contains "set title override of t0_1 to \"file-tree\"")
+}
+
+@test
+def "test compile_layout with default config without titles" [] {
+    let kdl_path = ($test_dir | path join ".." ".workspace.default.kdl" | path expand)
+
+    let applescript = (compile_layout
+        $kdl_path
+        "nvim"
+        "nnn"
+        "ag"
+        "/tmp"
+        "README.md"
+        "com.mitchellh.ghostty"
+    )
+
+    assert not ($applescript | str contains "set title override")
+}

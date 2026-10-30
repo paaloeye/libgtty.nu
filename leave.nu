@@ -15,7 +15,9 @@ use lib.nu *
 # the Ghostty AppleScript close calls succeed.
 #
 export def main [
-    --force (-f)  # skip confirmation prompt
+    --force (-f)                  # skip confirmation prompt
+    --title: string = ""          # tab title override on leave (default: "" clears override)
+    --keep-title                  # preserve existing tab and terminal title overrides
 ] {
     ensure_nu_version
 
@@ -59,39 +61,73 @@ export def main [
     }
 
     let to_close = ($terminal_ids | where { $in != $focused_id })
+    let to_close_as_list = ($to_close | each { |id| $"\"($id)\"" } | str join ", ")
 
-    for tid in $to_close {
-        let ok = (try {
-            ^osascript -e $"tell application id \"($bundle_id)\" to close \(first terminal whose id is \"($tid)\"\)" out+err> /dev/null
-            true
-        } catch {
-            false
-        })
-
-        if not $ok {
-            # Unzoom the focused split and retry closing the target terminal
-            if not ($focused_id | is-empty) {
-                ^osascript -e $"tell application id \"($bundle_id)\" to perform action \"toggle_split_zoom\" on \(first terminal whose id is \"($focused_id)\"\)" out+err> /dev/null
-            } else {
-                ^osascript -e $"tell application id \"($bundle_id)\" to perform action \"toggle_split_zoom\" on focused terminal of selected tab of front window" out+err> /dev/null
-            }
-            ^osascript -e $"tell application id \"($bundle_id)\" to close \(first terminal whose id is \"($tid)\"\)"
-        }
-    }
-
-    focus_terminal $bundle_id $focused_id
-}
-
-def focus_terminal [bundle_id: string, term_id: string] {
-    if not ($term_id | is-empty) {
-        ^osascript -e $"
-            tell application id \"($bundle_id)\"
-                focus \(first terminal whose id is \"($term_id)\"\)
-            end tell"
+    let title_script = if not $keep_title {
+        $"
+        try
+            set title override of tb to \"($title)\"
+        end try
+        if foc_trm is not missing value then
+            try
+                set title override of foc_trm to \"\"
+            end try
+        end if"
     } else {
-        ^osascript -e $"
-            tell application id \"($bundle_id)\"
-                focus terminal 1 of selected tab of front window
-            end tell"
+        ""
     }
+
+    let script = $"
+    tell application id \"($bundle_id)\"
+        set tb to missing value
+        if \"($info.win_id)\" is not \"\" and \"($info.tab_id)\" is not \"\" then
+            try
+                set w to \(first window whose id is \"($info.win_id)\"\)
+                set tb to \(first tab of w whose id is \"($info.tab_id)\"\)
+            end try
+        end if
+        if tb is missing value then
+            set tb to selected tab of front window
+        end if
+
+        set foc_trm to missing value
+        if \"($focused_id)\" is not \"\" then
+            try
+                set foc_trm to \(first terminal of tb whose id is \"($focused_id)\"\)
+            end try
+        end if
+        if foc_trm is missing value then
+            try
+                set foc_trm to focused terminal of tb
+            end try
+        end if
+
+        repeat with tid in {($to_close_as_list)}
+            set trm_id to \(tid as text\)
+            try
+                set trm to \(first terminal of tb whose id is trm_id\)
+                close trm
+            on error
+                if foc_trm is not missing value then
+                    try
+                        perform action \"toggle_split_zoom\" on foc_trm
+                    end try
+                end if
+                try
+                    set trm to \(first terminal of tb whose id is trm_id\)
+                    close trm
+                end try
+            end try
+        end repeat
+
+        if foc_trm is not missing value then
+            try
+                focus foc_trm
+            end try
+        end if
+
+        ($title_script)
+    end tell"
+
+    ^osascript -e $script
 }
