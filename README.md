@@ -20,13 +20,7 @@ workspace surface layouts and pane interactions via the native [Ghostty AppleScr
 
 ## Requirements
 
-> [!IMPORTANT]
-> A currently unreleased version of Ghostty is required to support the AppleScript `send key` and `input text` APIs.
->
-> - **Pending Upstream PR**: [ghostty-org/ghostty#13180](https://github.com/ghostty-org/ghostty/pull/13180)
-> - **Required Fork**: [paaloeye/ghostty (feat/applescript-send-key-text-part-1)](https://github.com/paaloeye/ghostty/tree/feat/applescript-send-key-text-part-1)
-
-- **Operating System**: **macOS** with **Ghostty** installed
+- **Operating System**: **macOS** with **Ghostty 1.4+** installed
 - **Shell**: **Nushell** ≥ 0.114
 - **Swift**: Toolchain ≥ 6.0 (required to build the low-latency broadcast engine)
 
